@@ -5,3 +5,5 @@ activar el ambiente virtual: ./nombredelambientevirtual/Scripts/activate
 instalar Flask: pip install Flask
 ejecutar la app: python app.py
 pip install flask_sqlalchemy
+
+la base de datos esta en el archivo : baseDatos.sql
