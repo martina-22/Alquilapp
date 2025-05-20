@@ -7,3 +7,4 @@ ejecutar la app: python app.py
 pip install flask_sqlalchemy
 
 la base de datos esta en el archivo : baseDatos.sql
+se hace ejecutando SQL Scripts y run SQL Scripts 
