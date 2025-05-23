@@ -5,12 +5,19 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="4f6eafa4-f5b1-43c8-8551-924a01335a89" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app.py" beforeDir="false" afterPath="$PROJECT_DIR$/app.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/blueprints/admin/routes.py" beforeDir="false" afterPath="$PROJECT_DIR$/blueprints/admin/routes.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/blueprints/auth/routes.py" beforeDir="false" afterPath="$PROJECT_DIR$/blueprints/auth/routes.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/blueprints/reservas/routes.py" beforeDir="false" afterPath="$PROJECT_DIR$/blueprints/reservas/routes.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/blueprints/vehiculos/routes.py" beforeDir="false" afterPath="$PROJECT_DIR$/blueprints/vehiculos/routes.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/migrations/README" beforeDir="false" afterPath="$PROJECT_DIR$/migrations/README" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/migrations/alembic.ini" beforeDir="false" afterPath="$PROJECT_DIR$/migrations/alembic.ini" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/migrations/env.py" beforeDir="false" afterPath="$PROJECT_DIR$/migrations/env.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/migrations/script.py.mako" beforeDir="false" afterPath="$PROJECT_DIR$/migrations/script.py.mako" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/models/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/models/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models/administrador.py" beforeDir="false" afterPath="$PROJECT_DIR$/models/administrador.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models/empleado.py" beforeDir="false" afterPath="$PROJECT_DIR$/models/empleado.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models/estado.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/models/extra.py" beforeDir="false" afterPath="$PROJECT_DIR$/models/extra.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models/politica_cancelacion.py" beforeDir="false" afterPath="$PROJECT_DIR$/models/politica_cancelacion.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/models/reserva.py" beforeDir="false" afterPath="$PROJECT_DIR$/models/reserva.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/models/usuario.py" beforeDir="false" afterPath="$PROJECT_DIR$/models/usuario.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/models/vehiculo.py" beforeDir="false" afterPath="$PROJECT_DIR$/models/vehiculo.py" afterDir="false" />
@@ -37,10 +44,11 @@
     &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
+    &quot;database.data.extractors.current.export.id&quot;: &quot;Comma-separated (CSV)_id&quot;,
     &quot;git-widget-placeholder&quot;: &quot;feature/reserva&quot;,
     &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;C:/Users/marti&quot;
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/marti&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.lookFeel&quot;
   },
   &quot;keyToStringList&quot;: {
     &quot;DatabaseDriversLRU&quot;: [
@@ -48,6 +56,9 @@
     ]
   }
 }</component>
+  <component name="SQLScriptSettings">
+    <option name="outputLayout" value="File per object by schema and database.groovy" />
+  </component>
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">
       <changelist id="4f6eafa4-f5b1-43c8-8551-924a01335a89" name="Changes" comment="" />
