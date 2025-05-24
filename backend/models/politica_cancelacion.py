@@ -1,5 +1,4 @@
-from app import db
-
+from extensions import db
 class PoliticaCancelacion(db.Model):
     __tablename__ = 'politica_cancelacion'
 

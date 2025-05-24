@@ -1,4 +1,4 @@
-from app import db
+from extensions import db
 
 class ReservaExtra(db.Model):
     __tablename__ = 'reserva_extra'

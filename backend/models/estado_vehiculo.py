@@ -1,4 +1,4 @@
-from app import db
+from extensions import db
 
 class EstadoVehiculo(db.Model):
     __tablename__ = 'estado_vehiculo'

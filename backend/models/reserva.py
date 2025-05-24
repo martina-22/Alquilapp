@@ -1,4 +1,4 @@
-from app import db
+from extensions import db
 from models.estado_reserva import EstadoReserva
 
 class Reserva(db.Model):

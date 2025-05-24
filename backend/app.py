@@ -1,19 +1,16 @@
 from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
+from extensions import db  # Importa la instancia única de db
 
-# Inicialización de la app y configuración básica
-app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:root@localhost:3306/alquiler_autos'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SECRET_KEY'] = 'clave_secreta_para_sesiones'
+def create_app():
+    app = Flask(__name__)
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:root@localhost:3306/alquiler_autos'
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    app.config['SECRET_KEY'] = 'clave_secreta_para_sesiones'
 
-CORS(app)
-db = SQLAlchemy(app)
+    CORS(app)
+    db.init_app(app)  # Registra la app con SQLAlchemy
 
-
-# Importar blueprints
-def register_blueprints(app):
     from blueprints.auth.routes import auth_bp
     from blueprints.vehiculos.routes import vehiculos_bp
     from blueprints.admin.routes import admin_bp
@@ -24,7 +21,8 @@ def register_blueprints(app):
     app.register_blueprint(vehiculos_bp, url_prefix='/vehiculos')
     app.register_blueprint(admin_bp, url_prefix='/admin')
 
-# Punto de entrada
+    return app
+
 if __name__ == '__main__':
-    register_blueprints(app)
+    app = create_app()
     app.run(debug=True)

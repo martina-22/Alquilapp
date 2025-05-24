@@ -1,4 +1,5 @@
-from app import app, db
+from app import app
+from extensions import db
 
 # Asegurate de importar todos los modelos para que SQLAlchemy los detecte
 import models.usuario

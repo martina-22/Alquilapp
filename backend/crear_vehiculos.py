@@ -1,6 +1,7 @@
 
 import pandas as pd
-from app import app, db
+from app import app
+from extensions import db
 from models.sucursal import Sucursal
 from models.politica_cancelacion import PoliticaCancelacion
 from models.estado_vehiculo import EstadoVehiculo
