@@ -1,29 +1,47 @@
+
 import pandas as pd
 from app import app, db
 from models.sucursal import Sucursal
 from models.politica_cancelacion import PoliticaCancelacion
-from models.estado import Estado
+from models.estado_vehiculo import EstadoVehiculo
+from models.estado_reserva import EstadoReserva
+from models.extra import Extra
 from models.vehiculo import Vehiculo
 
-# Ruta al CSV
 csv_path = "C:/Users/marti/Downloads/vehiculos_listado_150.csv"
 df = pd.read_csv(csv_path)
 
-# Estados estándar
-estados_def = ["Disponible", "Reservado", "En mantenimiento"]
-
 with app.app_context():
-    # ✅ Crear tablas si no existen
     db.create_all()
 
-    # 1. Insertar estados (si no existen)
-    for nombre_estado in estados_def:
-        if not Estado.query.filter_by(nombre=nombre_estado).first():
-            db.session.add(Estado(nombre=nombre_estado))
+    # 1. Insertar estados del vehículo
+    estados_vehiculo = ["Disponible", "Reservado", "En mantenimiento"]
+    for nombre in estados_vehiculo:
+        if not EstadoVehiculo.query.filter_by(nombre=nombre).first():
+            db.session.add(EstadoVehiculo(nombre=nombre))
     db.session.commit()
 
+    # 2. Insertar estados de reserva
+    estados_reserva = ["pendiente", "confirmada", "cancelada"]
+    for nombre in estados_reserva:
+        if not EstadoReserva.query.filter_by(nombre=nombre).first():
+            db.session.add(EstadoReserva(nombre=nombre))
+    db.session.commit()
+
+    # 3. Insertar extra
+    extra_base = [
+        ("GPS", "Sistema de navegación satelital", 2500),
+        ("Silla para bebé", "Butaca homologada para niños", 3200),
+        ("Conductor adicional", "Permite agregar otro conductor", 1500)
+    ]
+    for nombre, desc, precio in extra_base:
+        if not Extra.query.filter_by(nombre=nombre).first():
+            db.session.add(Extra(nombre=nombre, descripcion=desc, precio=precio))
+    db.session.commit()
+
+    # 4. Cargar vehículos
     for _, row in df.iterrows():
-        # 2. Crear o buscar sucursal
+        # Crear o buscar sucursal
         sucursal = Sucursal.query.filter_by(localidad=row["Localidad"]).first()
         if not sucursal:
             sucursal = Sucursal(
@@ -35,7 +53,7 @@ with app.app_context():
             db.session.add(sucursal)
             db.session.commit()
 
-        # 3. Crear o buscar política de cancelación
+        # Crear o buscar política de cancelación
         desc = row["Política de cancelación"]
         politica = PoliticaCancelacion.query.filter_by(descripcion=desc).first()
         if not politica:
@@ -53,10 +71,10 @@ with app.app_context():
             db.session.add(politica)
             db.session.commit()
 
-        # 4. Buscar estado "Disponible"
-        estado = Estado.query.filter_by(nombre="Disponible").first()
+        # Buscar estado "Disponible"
+        estado = EstadoVehiculo.query.filter_by(nombre="Disponible").first()
 
-        # 5. Crear vehículo
+        # Crear vehículo
         vehiculo = Vehiculo(
             patente=row["Patente"],
             marca=row["Marca"],
@@ -72,4 +90,4 @@ with app.app_context():
         db.session.add(vehiculo)
 
     db.session.commit()
-    print("✔ Base cargada correctamente con estados, sucursales, políticas y vehículos.")
+    print("✔ Base cargada correctamente con estados, sucursales, políticas, estado_reserva, extra y vehículos.")
