@@ -1,4 +1,4 @@
-from app import db
+from extensions import db
 
 class EstadoReserva(db.Model):
     __tablename__ = 'estado_reserva'

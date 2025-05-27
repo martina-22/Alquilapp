@@ -1,4 +1,4 @@
-from app import db
+from extensions import db
 
 class Sucursal(db.Model):
     __tablename__ = 'sucursal'

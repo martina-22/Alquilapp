@@ -1,30 +1,49 @@
 from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
+from flask_mail import Mail
+from extensions import db, jwt  # Asegurate de tener extensions.py con db y jwt correctamente definidos
 
-# Inicialización de la app y configuración básica
-app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:root@localhost:3306/alquiler_autos'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SECRET_KEY'] = 'clave_secreta_para_sesiones'
+mail = Mail()  # Instancia global de Flask-Mail
 
-CORS(app)
-db = SQLAlchemy(app)
+def create_app():
+    app = Flask(__name__)
 
+    # Configuración de la app
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://alquilapp:alquilapp123@localhost:3306/alquiler_autos'
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    app.config['SECRET_KEY'] = 'alquilapp123'
+    app.config['JWT_SECRET_KEY'] = 'supersecretojwt123'  # Reemplazalo con una clave segura
 
-# Importar blueprints
-def register_blueprints(app):
+    # Configuración de Flask-Mail
+    app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+    app.config['MAIL_PORT'] = 587
+    app.config['MAIL_USE_TLS'] = True
+    app.config['MAIL_USERNAME'] = 'anitaormellob@gmail.com'  
+    app.config['MAIL_PASSWORD'] = 'sjxnsktixsdxigib'  
+    app.config['MAIL_DEFAULT_SENDER'] = 'anitaormellob@gmail.com'  
+
+    # Inicialización de extensiones
+    db.init_app(app)
+    jwt.init_app(app)
+    mail.init_app(app)
+
+    # CORS para permitir frontend en Vite (React)
+    CORS(app, supports_credentials=True, origins=["http://localhost:5173"])
+
+    # Middleware CORS para headers adicionales
+    @app.after_request
+    def after_request(response):
+        response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+        response.headers.add('Access-Control-Allow-Methods', 'GET,POST,OPTIONS,PUT,DELETE')
+        return response
+
+    # Blueprints
     from blueprints.auth.routes import auth_bp
-    from blueprints.vehiculos.routes import vehiculos_bp
-    from blueprints.admin.routes import admin_bp
-    from blueprints.reservas.routes import reservas_bp
+    app.register_blueprint(auth_bp, url_prefix="/auth")
 
-    app.register_blueprint(reservas_bp, url_prefix='/reservas')
-    app.register_blueprint(auth_bp, url_prefix='/auth')
-    app.register_blueprint(vehiculos_bp, url_prefix='/vehiculos')
-    app.register_blueprint(admin_bp, url_prefix='/admin')
+    return app
 
 # Punto de entrada
-if __name__ == '__main__':
-    register_blueprints(app)
+if __name__ == "__main__":
+    app = create_app()
     app.run(debug=True)

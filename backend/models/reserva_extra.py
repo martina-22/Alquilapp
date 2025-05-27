@@ -1,4 +1,4 @@
-from app import db
+from extensions import db
 class ReservaExtra(db.Model):
     __tablename__ = 'reserva_extra'
     reserva_id = db.Column(db.Integer, db.ForeignKey('reserva.id'), primary_key=True)
@@ -7,5 +7,4 @@ class ReservaExtra(db.Model):
     precio_unitario = db.Column(db.Float)
 
     reserva = db.relationship('Reserva', back_populates='extras')
-    extra = db.relationship('Extras', back_populates='reservas')
-
+    extra = db.relationship('Extra', back_populates='reservas')

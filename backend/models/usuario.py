@@ -1,4 +1,4 @@
-from app import db
+from extensions import db
 
 class Usuario(db.Model):
     __tablename__ = 'usuario'
@@ -7,7 +7,7 @@ class Usuario(db.Model):
     apellido = db.Column(db.Text)
     dni = db.Column(db.Integer)
     fecha_nacimiento = db.Column(db.Date)
-    telefono = db.Column(db.Integer)
+    telefono = db.Column(db.String(20), nullable=False)
     email = db.Column(db.String(255))
     contrasena = db.Column(db.String(255))
     es_admin = db.Column(db.Boolean)
