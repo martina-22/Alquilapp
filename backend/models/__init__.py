@@ -1,6 +1,3 @@
-from flask_sqlalchemy import SQLAlchemy
-
-db = SQLAlchemy()
 
 # Importación de modelos
 from .usuario import Usuario

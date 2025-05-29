@@ -1,4 +1,7 @@
-from app import db
+# models/reserva.py
+
+from extensions import db
+
 
 class Reserva(db.Model):
     __tablename__ = 'reserva'
@@ -7,11 +10,12 @@ class Reserva(db.Model):
     vehiculo_id = db.Column(db.Integer, db.ForeignKey('vehiculo.id'))
     fecha_inicio = db.Column(db.Date)
     fecha_fin = db.Column(db.Date)
-    estado_reserva = db.Column(db.Integer, db.ForeignKey('estado_reserva.id'))
+    # estado_reserva = db.Column(db.Integer, db.ForeignKey('estado_reserva.id'))
     pagada = db.Column(db.Boolean)
     monto_total = db.Column(db.Float)
+    estado = db.Column(db.String(50)) # Para las pruebas de correo
 
     usuario = db.relationship('Usuario', back_populates='reservas')
     vehiculo = db.relationship('Vehiculo', back_populates='reservas')
-    estado = db.relationship('EstadoReserva', back_populates='reservas')
+    # estado = db.relationship('EstadoReserva', back_populates='reservas')
     extras = db.relationship('ReservaExtra', back_populates='reserva')

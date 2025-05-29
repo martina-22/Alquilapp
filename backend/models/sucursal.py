@@ -1,4 +1,7 @@
-from app import db
+# models/sucursal.py
+
+from extensions import db
+
 
 class Sucursal(db.Model):
     __tablename__ = 'sucursal'

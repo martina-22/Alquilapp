@@ -1,4 +1,7 @@
-from app import db
+# models/vehiculo.py
+
+from extensions import db
+
 
 class Vehiculo(db.Model):
     __tablename__ = 'vehiculo'
@@ -12,7 +15,7 @@ class Vehiculo(db.Model):
     precio_dia = db.Column(db.Float)
     sucursal_id = db.Column(db.Integer, db.ForeignKey('sucursal.id'))
     politica_cancelacion_id = db.Column(db.Integer, db.ForeignKey('politica_cancelacion.id'))
-    estado_vehiculo = db.Column(db.Integer, db.ForeignKey('estado_vehiculo.id'))
+    estado_id = db.Column(db.Integer, db.ForeignKey('estado_vehiculo.id'))
 
     reservas = db.relationship('Reserva', back_populates='vehiculo')
     estado = db.relationship('EstadoVehiculo', back_populates='vehiculos')

@@ -1,4 +1,6 @@
-from app import db
+from extensions import db
+
+
 class Empleado(db.Model):
     __tablename__ = 'empleado'
     id = db.Column(db.Integer, db.ForeignKey('usuario.id'), primary_key=True)

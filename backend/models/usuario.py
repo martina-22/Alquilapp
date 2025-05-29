@@ -1,4 +1,7 @@
-from app import db
+# models/usuario.py
+
+from extensions import db
+
 
 class Usuario(db.Model):
     __tablename__ = 'usuario'
@@ -13,6 +16,8 @@ class Usuario(db.Model):
     es_admin = db.Column(db.Boolean)
     es_empleado = db.Column(db.Boolean)
 
-    administrador = db.relationship('Administrador', uselist=False, back_populates='usuario')
-    empleado = db.relationship('Empleado', uselist=False, back_populates='usuario')
+    administrador = db.relationship('Administrador', uselist=False,
+                                    back_populates='usuario')
+    empleado = db.relationship('Empleado', uselist=False,
+                               back_populates='usuario')
     reservas = db.relationship('Reserva', back_populates='usuario')

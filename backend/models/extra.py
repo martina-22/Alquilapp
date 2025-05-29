@@ -1,4 +1,6 @@
-from app import db
+from extensions import db
+
+
 class Extra(db.Model):
     __tablename__ = 'extras'
     id = db.Column(db.Integer, primary_key=True)
