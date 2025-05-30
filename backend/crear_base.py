@@ -9,7 +9,6 @@ import models.estado_reserva
 import models.estado_vehiculo
 import models.vehiculo
 import models.reserva
-import models.reserva
 
 with app.app_context():
     db.drop_all()   # 🔥 Elimina todas las tablas

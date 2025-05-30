@@ -7,5 +7,4 @@ class ReservaExtra(db.Model):
     precio_unitario = db.Column(db.Float)
 
     reserva = db.relationship('Reserva', back_populates='extras')
-    extra = db.relationship('Extras', back_populates='reservas')
-
+    extra = db.relationship('Extra', back_populates='reservas')

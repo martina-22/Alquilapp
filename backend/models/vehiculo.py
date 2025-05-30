@@ -1,4 +1,4 @@
-from app import db
+from extensions import db  # ⚠️ usa esto si estás usando un archivo `extensions.py`
 
 class Vehiculo(db.Model):
     __tablename__ = 'vehiculo'
