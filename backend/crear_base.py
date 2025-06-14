@@ -1,4 +1,4 @@
-from app import app
+from app import create_app
 from extensions import db
 
 # Asegurate de importar todos los modelos para que SQLAlchemy los detecte
@@ -11,6 +11,7 @@ import models.estado_vehiculo
 import models.vehiculo
 import models.reserva
 import models.reserva
+app = create_app()
 
 with app.app_context():
     db.drop_all()   # 🔥 Elimina todas las tablas

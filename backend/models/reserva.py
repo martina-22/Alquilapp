@@ -12,7 +12,7 @@ class Reserva(db.Model):
     fecha_fin = db.Column(db.Date, nullable=False)
     hora_retiro = db.Column(db.Time, nullable=True)         # NUEVO
     hora_devolucion = db.Column(db.Time, nullable=True)     # NUEVO
-    estado_id = db.Column(db.Integer, db.ForeignKey('estado_reserva.id'))
+    estado_id = db.Column(db.Integer, db.ForeignKey('estado_reserva.id'), default=1)
     pagada = db.Column(db.Boolean, default=False)
     monto_total = db.Column(db.Float, nullable=False)
 

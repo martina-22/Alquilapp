@@ -8,4 +8,3 @@ class Administrador(db.Model):
 
     sucursal = db.relationship('Sucursal', back_populates='administradores')
     usuario = db.relationship('Usuario', back_populates='administrador')
-

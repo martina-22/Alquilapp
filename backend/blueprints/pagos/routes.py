@@ -21,7 +21,7 @@ def crear_preferencia():
 
         preference_data = {
             "items": [{
-                "title": f"Reserva vehículo ID {data['vehiculo_id']}",
+                "title": f"Reserva vehículo {data['nombre_vehiculo']}",
                 "quantity": 1,
                 "unit_price": float(data["monto_total"]),
                 "currency_id": "ARS"

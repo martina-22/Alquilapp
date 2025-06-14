@@ -11,7 +11,9 @@ def iniciar_reserva(data):
         vehiculo_id = int(data.get("vehiculo_id"))
         fecha_inicio_str = data.get("fecha_inicio")
         fecha_fin_str = data.get("fecha_fin")
-
+        hora_retiro= data.get("hora_retiro")
+        hora_devolucion=data.get("hora_devolucion")
+        
         if not all([usuario_id, vehiculo_id, fecha_inicio_str, fecha_fin_str]):
             raise Exception("Faltan datos obligatorios")
 
@@ -39,7 +41,8 @@ def iniciar_reserva(data):
         monto_total = dias * vehiculo.precio_dia
 
         pagada = data.get("pagada", False)
-        estado_id = 2 if pagada else data.get("estado_id", 1)
+        estado_id = 2 if pagada else 1  
+
 
         nueva_reserva = Reserva(
             usuario_id=usuario_id,
@@ -48,12 +51,16 @@ def iniciar_reserva(data):
             fecha_fin=fecha_fin,
             estado_id=estado_id,
             pagada=pagada,
+            hora_retiro=hora_retiro,
+            hora_devolucion=hora_devolucion,
             monto_total=monto_total
         )
 
         db.session.add(nueva_reserva)
         db.session.commit()
-        return nueva_reserva
+        reserva_con_estado = Reserva.query.options(db.joinedload(Reserva.estado)).get(nueva_reserva.id)
+
+        return reserva_con_estado
 
     except Exception as e:
         print("❌ Error al iniciar reserva:", str(e))
