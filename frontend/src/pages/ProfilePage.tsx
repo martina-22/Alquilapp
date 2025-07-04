@@ -1,28 +1,27 @@
 import { useEffect, useState, } from 'react';
 import { Box, Typography, Container, Button, CircularProgress } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
+import { authFetch } from '../utils/authFetch';
 
 function ProfilePage() {
   const [profile, setProfile] = useState<any>(null);
 
-  useEffect(() => {
+ useEffect(() => {
     const fetchProfile = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        const res = await fetch('http://localhost:5000/auth/profile', {
-        });
-        if (!res.ok) {
-          throw new Error('Error en la respuesta del servidor');
-        }
-        const data = await res.json();
-        setProfile(data);
-      } catch (error) {
-        console.error(error);
-        setProfile({ error: 'No se pudo cargar el perfil' });
-      }
-    };
-    fetchProfile();
-  }, []);
+    try {
+      const res = await authFetch('http://localhost:5000/auth/profile');
+      if (!res.ok) throw new Error('Error en la respuesta del servidor');
+
+      const data = await res.json();
+      console.log("📦 Datos recibidos:", data);
+      setProfile(data);
+    } catch (error) {
+      console.error(error);
+      setProfile({ error: 'No se pudo cargar el perfil' });
+    }
+  };
+  fetchProfile();
+}, []);
 
   if (!profile) {
         return  (
@@ -61,18 +60,33 @@ function ProfilePage() {
             Fecha de nacimiento: {profile.fecha_nacimiento ?? "No disponible"}
           </Typography>
           <Box sx={{ mt: 2, display: 'flex', gap: 2, justifyContent: 'flex-start' }}>
-            <Button variant="contained" color="primary" sx={{ px: 3, py: 1.5, fontWeight: 'bold', width: '140px'}}
+            <Button variant="contained" color="secondary" sx={{
+                      px: 3,
+                      py: 1.5,
+                      fontWeight: 'bold',
+                      width: '140px',
+                      whiteSpace: 'nowrap',      
+                      overflow: 'hidden',          
+                    }}
                     component={RouterLink}
                     to="/edit-profile"
+                    
               >
                 Editar Perfil
             </Button >
             <Button
               variant="outlined"
-              color="primary"
+              color="secondary"
               component={RouterLink}
                 to="/"
-                sx={{ px: 3, py: 1.5, fontWeight: 'bold' }}
+                sx={{
+                      px: 3,
+                      py: 1.5,
+                      fontWeight: 'bold',
+                      width: '140px',
+                      whiteSpace: 'nowrap',      
+                      overflow: 'hidden',          
+                    }}
               >
               Volver
             </Button>

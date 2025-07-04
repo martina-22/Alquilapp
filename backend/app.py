@@ -1,57 +1,60 @@
-from flask import Flask, request, jsonify
-from flask_sqlalchemy import SQLAlchemy
+from flask import Flask, jsonify
 from flask_cors import CORS
-from extensions import db, mail
-
-app = Flask(__name__)
-
-# --- Configuración de la aplicación ---
-app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URI=mysql+pymysql://user:password@host/database
-SECRET_KEY=una_clave_secreta_muy_larga_y_aleatoria
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+from flask_mail import Mail
+from extensions import db, jwt
 
 
-# --- CONFIGURACIÓN DE FLASK-MAIL ---
-app.config['MAIL_SERVER'] = 'smtp.gmail.com'
-app.config['MAIL_PORT'] = 587
-app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USERNAME'] = '***'  # cambiar
-app.config['MAIL_PASSWORD'] = '***' # <-- cambiar
-app.config['MAIL_DEFAULT_SENDER'] = '***'  # <-- cambiar
+mail = Mail()
 
-# --- Configuración de CORS ---
-# Permite solicitudes desde tu frontend React en el puerto que se esté ejecutando.
-# 'http://localhost:5173' debe ser la URL exacta de tu frontend.
-# 'resources={r"/*": ...}' aplica esta configuración a todas las rutas.
-# 'methods' especifica los verbos HTTP permitidos.
-# 'allow_headers'-> crucial para enviar encabezados como 'Content-Type' o 'Authorization'.
-CORS(app, resources={
-    r"/*": {
-        "origins": "http://localhost:5173", # cambiar segun el puerto
-        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
-        "allow_headers": ["Content-Type", "Authorization"]
-    }
-})
 
-# --- Inicialización de extensiones ---
-db.init_app(app)
-mail.init_app(app)
+def create_app():
+    app = Flask(__name__)
 
-# --- Importación de Blueprints ---
-from blueprints.auth.routes import auth_bp
-from blueprints.vehiculos.routes import vehiculos_bp
-from blueprints.admin.routes import admin_bp
-from blueprints.reservas.routes import reservas_bp
-from blueprints.sucursal.routes import sucursal_bp
+    # Configuraciones base
+    # app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:root@localhost:3306/alquiler_autos'
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:@localhost:3306/baseDatos'
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    app.config['SECRET_KEY'] = 'alquilapp123'
+    app.config['JWT_SECRET_KEY'] = 'supersecretojwt123'
+    app.config["JWT_ERROR_MESSAGE_KEY"] = "message"
+    app.config["PROPAGATE_EXCEPTIONS"] = True
+    # Configuración de correo
+    app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+    app.config['MAIL_PORT'] = 587
+    app.config['MAIL_USE_TLS'] = True
+    # app.config['MAIL_USERNAME'] = 'anitaormellob@gmail.com'
+    # app.config['MAIL_USERNAME'] = 'martigarcia.1407@gmail.com'
+    app.config['MAIL_USERNAME'] = 'caralquilapp@gmail.com'
+    app.config['MAIL_PASSWORD'] = 'tnfopheqjokxzwqx'
+    app.config['MAIL_DEFAULT_SENDER'] = 'caralquilapp@gmail.com'
 
-# --- Registro de Blueprints ---
-app.register_blueprint(reservas_bp, url_prefix='/reservas')
-app.register_blueprint(auth_bp, url_prefix='/auth')
-app.register_blueprint(vehiculos_bp, url_prefix='/vehiculos')
-app.register_blueprint(admin_bp, url_prefix='/admin')
-app.register_blueprint(sucursal_bp, url_prefix='/sucursales')
+    # ✅ Habilitar CORS correctamente (sin duplicar headers)
+    CORS(app, supports_credentials=True, resources={r"/*": {"origins": "http://localhost:5173"}})
 
-# --- Punto de entrada para ejecutar la aplicación ---
+    # Inicializar extensiones
+    db.init_app(app)
+    jwt.init_app(app)
+    mail.init_app(app)
+
+    # Registrar Blueprints
+    from blueprints.auth.routes import auth_bp
+    from blueprints.vehiculos.routes import vehiculos_bp
+    from blueprints.reservas.routes import reservas_bp
+    from blueprints.usuario.routes import usuarios_bp
+    from blueprints.pagos.routes import pagos_bp
+    from blueprints.sucursal.routes import sucursales_bp
+    app.register_blueprint(sucursales_bp, url_prefix="/sucursales")
+
+    app.register_blueprint(auth_bp, url_prefix="/auth")
+    app.register_blueprint(vehiculos_bp, url_prefix="/vehiculos")
+    app.register_blueprint(reservas_bp, url_prefix="/reservas")
+    app.register_blueprint(usuarios_bp, url_prefix="/usuarios")
+    app.register_blueprint(pagos_bp, url_prefix="/pagos")
+
+    return app
+
+
+# Entry point
 if __name__ == '__main__':
-    # 'debug=True' desactívar después
-    app.run(debug=True, port=5000)  # Se puede especificar el puerto acá
+    app = create_app()
+    app.run(debug=True)

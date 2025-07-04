@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Typography, Container, Button, TextField, Alert } from '@mui/material';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
+import { authFetch } from '../utils/authFetch';
 
 function EditProfilePage() {
   const navigate = useNavigate();
@@ -32,12 +33,7 @@ function EditProfilePage() {
   useEffect(() => {
     const fetchProfileData = async () => {
       try {
-        const token = localStorage.getItem('token');
-        const res = await fetch('http://localhost:5000/auth/profile', {
-          headers: {
-            'Authorization': `Bearer ${token}` // Envía el token si es necesario para obtener el perfil
-          }
-        });
+        const res = await authFetch('http://localhost:5000/auth/profile');
         if (!res.ok) {
           throw new Error('No se pudo cargar el perfil. ¿Está autenticado?');
         }
@@ -133,44 +129,38 @@ function EditProfilePage() {
     return isValid;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault(); // Evita el recargado de la página
+ const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
 
-    setSubmitError(null); // Limpia errores anteriores
-    setSuccessMessage(null); // Limpia mensajes de éxito anteriores
+  setSubmitError(null);
+  setSuccessMessage(null);
 
-    if (validateForm()) {
-      try {
-         
+  if (validateForm()) {
+    try {
+     const res = await authFetch('http://localhost:5000/auth/profile', {
+        method: 'PUT',
+        body: JSON.stringify(profile),
+      });
 
-        const res = await fetch('http://localhost:5000/auth/profile', {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            // 'Authorization': `Bearer ${token}` // Envía el token en el encabezado Authorization
-          },
-          body: JSON.stringify(profile), // Envía los datos actualizados
-        });
 
-        if (!res.ok) {
-          const errorData = await res.json();
-          throw new Error(errorData.message || 'Error al actualizar el perfil.');
-        }
-
-        // Si la actualización fue exitosa
-        setSuccessMessage('Perfil actualizado con éxito.');
-        // Opcional: Redirigir al usuario de vuelta a la página de perfil después de un tiempo
-        setTimeout(() => {
-          navigate('/profile');
-        }, 2000); // Redirige después de 2 segundos
-      } catch (error: any) {
-        console.error("Error al guardar el perfil:", error);
-        setSubmitError(error.message || 'Hubo un problema al guardar el perfil.');
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || 'Error al actualizar el perfil.');
       }
-    } else {
-      setSubmitError('Por favor, completa todos los campos obligatorios y corrige los errores.');
+
+      setSuccessMessage('Perfil actualizado con éxito.');
+      setTimeout(() => {
+        navigate('/profile');
+      }, 2000);
+    } catch (error: any) {
+      console.error("Error al guardar el perfil:", error);
+      setSubmitError(error.message || 'Hubo un problema al guardar el perfil.');
     }
-  };
+  } else {
+    setSubmitError('Por favor, completa todos los campos obligatorios y corrige los errores.');
+  }
+};
+
 
   if (loading) {
     return (
@@ -257,7 +247,7 @@ function EditProfilePage() {
           <Box sx={{ mt: 3, display: 'flex', gap: 2, justifyContent: 'flex-start' }}>
             <Button
               variant="contained"
-              color="primary"
+              color="secondary"
               type="submit" // Botón que dispara el submit del formulario
               sx={{ px: 3, py: 1.5, fontWeight: 'bold' }}
             >
@@ -265,7 +255,7 @@ function EditProfilePage() {
             </Button>
             <Button
               variant="outlined"
-              color="primary"
+              color="secondary"
               component={RouterLink}
               to="/profile"
               sx={{ px: 3, py: 1.5, fontWeight: 'bold' }}

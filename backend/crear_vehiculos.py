@@ -1,5 +1,5 @@
+from app import create_app
 import pandas as pd
-from app import app
 from extensions import db
 from models.sucursal import Sucursal
 from models.politica_cancelacion import PoliticaCancelacion
@@ -7,7 +7,10 @@ from models.estado_vehiculo import EstadoVehiculo
 from models.estado_reserva import EstadoReserva
 from models.extra import Extra
 from models.vehiculo import Vehiculo
+from models.usuario import Usuario
+from datetime import date
 
+app = create_app()
 csv_path = "C:/Users/marti/Downloads/vehiculos_listado_150.csv"
 df = pd.read_csv(csv_path)
 
@@ -36,10 +39,9 @@ with app.app_context():
     ]
     for nombre, desc, precio in extra_base:
         if not Extra.query.filter_by(nombre=nombre).first():
-            db.session.add(Extra(nombre=nombre, descripcion=desc,
-                                 precio=precio))
+            db.session.add(Extra(nombre=nombre, descripcion=desc, precio=precio))
     db.session.commit()
-
+   
     # 4. Cargar vehículos
     for _, row in df.iterrows():
         # Crear o buscar sucursal
@@ -56,7 +58,7 @@ with app.app_context():
 
         # Crear o buscar política de cancelación
         desc = row["Política de cancelación"]
-        politica = PoliticaCancelacion.query.filter_by(descripcion=desc).first() # noqa
+        politica = PoliticaCancelacion.query.filter_by(descripcion=desc).first()
         if not politica:
             if desc == "Sin devolución":
                 dias, porcentaje = 0, 100.0
@@ -75,6 +77,7 @@ with app.app_context():
         # Buscar estado "Disponible"
         estado = EstadoVehiculo.query.filter_by(nombre="Disponible").first()
 
+        
         # Crear vehículo
         vehiculo = Vehiculo(
             patente=row["Patente"],
@@ -91,5 +94,4 @@ with app.app_context():
         db.session.add(vehiculo)
 
     db.session.commit()
-    print("✔ Base cargada correctamente con estados, sucursales, políticas,"
-          "estado_reserva, extra y vehículos.")
+    print("✔ Base cargada correctamente con estados, sucursales, políticas, estado_reserva, extra y vehículos.")

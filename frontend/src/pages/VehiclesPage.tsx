@@ -1,5 +1,8 @@
 // src/pages/VehiclesPage.tsx
+
 import React, { useState, useEffect } from 'react';
+import { Link as RouterLink, useLocation } from 'react-router-dom';
+
 import {
   Container,
   Typography,
@@ -10,10 +13,13 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import CategoryFilter from '../components/CategoryFilter';
-import { useLocation } from 'react-router-dom';
+import CategoryFilter from '../pages/CategoryFilter';
 
 interface PoliticaCancelacionDetails {
   id: number;
@@ -37,9 +43,72 @@ interface Vehicle {
   politica_cancelacion_details: PoliticaCancelacionDetails | null;
 }
 
+interface Sucursal {
+  id: number;
+  nombre: string;
+  localidad: string;
+}
+
 function VehiclesPage() {
   const location = useLocation();
+  const params = new URLSearchParams(location.search);
 
+  const fechaInicio = params.get('fecha_inicio');
+  const fechaFin = params.get('fecha_fin');
+  const horaRetiro = params.get('hora_retiro');
+  const horaDevolucion = params.get('hora_devolucion');
+
+  // --- Sucursales ---
+  const [sucursalesData, setSucursalesData] = useState<Sucursal[]>([]);
+  const [loadingSucursales, setLoadingSucursales] = useState(true);
+  const [errorSucursales, setErrorSucursales] = useState<string | null>(null);
+
+  // Sincronizar sucursal con la URL
+  const sucursalFromUrl = params.get('sucursal') || '';
+  const [sucursalSeleccionada, setSucursalSeleccionada] = useState(sucursalFromUrl);
+
+  // Sincroniza el estado con la URL cuando cambia (por ejemplo, al entrar desde el carrusel)
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const sucursalFromUrl = params.get('sucursal') || '';
+    setSucursalSeleccionada(sucursalFromUrl);
+  }, [location.search]);
+
+  // Cuando el usuario cambia el select, actualiza la URL
+  const handleSucursalChange = (event: React.ChangeEvent<{ value: unknown }>) => {
+    const value = event.target.value as string;
+    setSucursalSeleccionada(value);
+
+    const params = new URLSearchParams(location.search);
+    if (value) {
+      params.set('sucursal', value);
+    } else {
+      params.delete('sucursal');
+    }
+    window.history.replaceState({}, '', `${window.location.pathname}?${params.toString()}`);
+  };
+
+  // Fetch sucursales when component mounts
+  useEffect(() => {
+    const fetchSucursales = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/sucursales/all');
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data: Sucursal[] = await response.json();
+        setSucursalesData(data);
+      } catch (error: any) {
+        console.error("Error al cargar sucursales:", error);
+        setErrorSucursales(`No se pudieron cargar las sucursales: ${error.message}`);
+      } finally {
+        setLoadingSucursales(false);
+      }
+    };
+    fetchSucursales();
+  }, []);
+
+  // --- Categorías ---
   const getInitialCategory = () => {
     const params = new URLSearchParams(location.search);
     return params.get('categoria');
@@ -59,30 +128,26 @@ function VehiclesPage() {
     "Apto discapacitados",
   ];
 
+  // Fetch vehicles when filters change
   useEffect(() => {
     const fetchVehicles = async () => {
       setLoading(true);
       setError(null);
       try {
         let url = 'http://localhost:5000/vehiculos';
+        const paramsArr = [];
+        if (selectedCategory) paramsArr.push(`categoria=${encodeURIComponent(selectedCategory)}`);
+        if (sucursalSeleccionada) paramsArr.push(`sucursal=${encodeURIComponent(sucursalSeleccionada)}`);
+        if (paramsArr.length > 0) url += `?${paramsArr.join('&')}`;
 
-        if (selectedCategory) {
-          url = `http://localhost:5000/vehiculos?categoria=${encodeURIComponent(selectedCategory)}`;
-        }
-
-        const res = await fetch(url, {
-          // headers: { /* ... */ }
-        });
-
+        const res = await fetch(url);
         if (!res.ok) {
           const errorData = await res.json();
           throw new Error(errorData.message || 'No se pudieron cargar los vehículos.');
         }
-
         const data = await res.json();
         setVehicles(data);
       } catch (err: any) {
-        console.error("Error al cargar vehículos:", err);
         setError(err.message || 'Hubo un error al cargar los vehículos.');
       } finally {
         setLoading(false);
@@ -90,7 +155,7 @@ function VehiclesPage() {
     };
 
     fetchVehicles();
-  }, [selectedCategory, location.search]);
+  }, [selectedCategory, sucursalSeleccionada, location.search]);
 
   const handleCategorySelect = (category: string | null) => {
     setSelectedCategory(category);
@@ -124,14 +189,33 @@ function VehiclesPage() {
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
       <Typography variant="h4" component="h1" gutterBottom align="center">
-        Filtrar por categoría
+        Vehículos Disponibles
       </Typography>
 
-      <CategoryFilter
-        categories={availableCategories}
-        selectedCategory={selectedCategory}
-        onSelectCategory={handleCategorySelect}
-      />
+      <Box sx={{ display: 'flex', gap: 2, mb: 2, justifyContent: 'center', flexWrap: 'wrap' }}>
+        <CategoryFilter
+          categories={availableCategories}
+          selectedCategory={selectedCategory}
+          onSelectCategory={handleCategorySelect}
+        />
+        <FormControl sx={{ minWidth: 1018, maxWidth: '100%' }} variant="outlined">
+          <InputLabel id="sucursal-label">Sucursal</InputLabel>
+          <Select
+            labelId="sucursal-label"
+            value={sucursalSeleccionada}
+            label="Sucursal"
+            onChange={handleSucursalChange}
+            variant="outlined"
+          >
+            <MenuItem value="">Seleccione sucursal</MenuItem>
+            {sucursalesData.map((sucursalItem) => (
+              <MenuItem key={sucursalItem.id} value={sucursalItem.id}>
+                {sucursalItem.nombre} - {sucursalItem.localidad}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+      </Box>
 
       <Box sx={{ mt: 4 }}>
         {vehicles.length === 0 ? (
@@ -148,7 +232,7 @@ function VehiclesPage() {
                 </Typography>
                 <Typography variant="body2">Año: {vehicle.anio}</Typography>
                 <Typography variant="body2">Capacidad: {vehicle.capacidad} pasajeros</Typography>
-                <Typography variant="h6" color="primary" sx={{ mt: 2 }}>
+                <Typography variant="h6" color="secondary" sx={{ mt: 2 }}>
                   ${vehicle.precio_dia} / día
                 </Typography>
 
@@ -161,7 +245,7 @@ function VehiclesPage() {
                       id={`panel-politica-${vehicle.id}-header`}
                       sx={{ minHeight: '40px', '& .MuiAccordionSummary-content': { margin: '8px 0' } }}
                     >
-                      <Typography variant="subtitle2" color="primary.text" sx={{ fontWeight: 'bold' }}>
+                      <Typography variant="subtitle2" color="secondary.text" sx={{ fontWeight: 'bold' }}>
                         Política de Cancelación
                       </Typography>
                     </AccordionSummary>
@@ -185,9 +269,11 @@ function VehiclesPage() {
                 <Button
                   variant="contained"
                   fullWidth
-                  color="primary"
+                  color="secondary"
                   sx={{ mt: 2 }}
-                  onClick={() => alert(`Reservar vehículo ${vehicle.id} funcionalidad no implementada`)}
+                  component={RouterLink}
+                  to={`/reservar?vehiculo_id=${vehicle.id}&fecha_inicio=${fechaInicio}&fecha_fin=${fechaFin}&hora_retiro=${horaRetiro}&hora_devolucion=${horaDevolucion}`}
+                  disabled={!fechaInicio || !fechaFin || !horaRetiro || !horaDevolucion}
                 >
                   Reservar
                 </Button>

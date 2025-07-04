@@ -1,21 +1,139 @@
-# blueprints/reservas/routes.py
-
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, request, jsonify
+from services.reservas_service import iniciar_reserva, obtener_reservas_por_usuario, obtener_reserva_por_id,cancelar_reserva
+from datetime import date, datetime
+from models import Reserva
+from extensions import db
+from sqlalchemy.orm import joinedload
+from flask_jwt_extended import jwt_required, get_jwt_identity
+from flask import Blueprint, jsonify, request, make_response
 from models.reserva import Reserva
 from models.usuario import Usuario
 from models.vehiculo import Vehiculo
 from models.sucursal import Sucursal
 from models.politica_cancelacion import PoliticaCancelacion
-# from models.estado_reserva import EstadoReserva
+from flask_cors import CORS
 
-from extensions import db
-from sqlalchemy.orm import joinedload
+from services.mailer import send_email_notification
+reservas_bp = Blueprint("reservas", __name__)
+CORS(reservas_bp, supports_credentials=True, origins=["http://localhost:5173"])
 
-from services.mailer import send_email_notification # función de envío de correos
+from flask import request, jsonify
+from flask_jwt_extended import jwt_required, get_jwt_identity
 
-reservas_bp = Blueprint('reservas', __name__)
 
-# Ruta para simular el pago de una reserva y enviar una notificación
+@reservas_bp.route('/ver', methods=['GET', 'OPTIONS'])
+def ver_reservas():
+    if request.method == 'OPTIONS':
+        response = make_response()
+        response.headers.add("Access-Control-Allow-Origin", "http://localhost:5173")
+        response.headers.add("Access-Control-Allow-Headers", "Content-Type,Authorization")
+        response.headers.add("Access-Control-Allow-Methods", "GET,OPTIONS")
+        response.headers.add("Access-Control-Allow-Credentials", "true")
+        return response, 200
+
+    return ver_reservas_protegido()
+
+
+@jwt_required()
+def ver_reservas_protegido():
+    user_id = get_jwt_identity()
+
+    # 💡 Agregamos joinedload para traer el estado junto con la reserva
+    reservas = (
+        Reserva.query
+        .options(joinedload(Reserva.estado))
+        .filter_by(usuario_id=user_id)
+        .all()
+    )
+
+    response = jsonify([reserva.to_dict() for reserva in reservas])
+    response.headers.add("Access-Control-Allow-Origin", "http://localhost:5173")
+    response.headers.add("Access-Control-Allow-Credentials", "true")
+    return response
+
+
+@reservas_bp.route("/iniciar", methods=["POST", "OPTIONS"])
+def iniciar_reserva_endpoint():
+    if request.method == "OPTIONS":
+        response = make_response()
+        response.headers.add("Access-Control-Allow-Origin", "http://localhost:5173")
+        response.headers.add("Access-Control-Allow-Headers", "Content-Type,Authorization")
+        response.headers.add("Access-Control-Allow-Methods", "POST,OPTIONS")
+        response.headers.add("Access-Control-Allow-Credentials", "true")
+        return response
+
+    try:
+        data = request.get_json()
+
+        # ✅ Usamos el servicio que contiene la lógica de validación y estado
+        reserva_creada = iniciar_reserva(data)
+
+        response = jsonify(reserva_creada.to_dict())
+        response.headers.add("Access-Control-Allow-Origin", "http://localhost:5173")
+        response.headers.add("Access-Control-Allow-Credentials", "true")
+        return response, 201
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@reservas_bp.route("/detalle/<int:reserva_id>", methods=["GET"])
+def ver_detalle_reserva(reserva_id):
+    reserva = obtener_reserva_por_id(reserva_id)
+    if not reserva:
+        return jsonify({"error": "Reserva no encontrada"}), 404
+
+    reserva_serializada = {
+        "id": reserva.id,
+        "usuario_id": reserva.usuario_id,
+        "vehiculo_id": reserva.vehiculo_id,
+        "fecha_inicio": reserva.fecha_inicio.isoformat(),
+        "fecha_fin": reserva.fecha_fin.isoformat(),
+        "estado_id": reserva.estado_id,
+        "pagada": reserva.pagada,
+        "monto_total": reserva.monto_total
+    }
+
+    return jsonify(reserva_serializada)
+
+
+
+@reservas_bp.route("/cancelar/<int:reserva_id>", methods=["PUT"])
+def cancelar_reserva(reserva_id):
+    reserva = Reserva.query.options(joinedload(Reserva.estado)).get(reserva_id)
+    if not reserva:
+        return jsonify({"error": "Reserva no encontrada"}), 404
+
+    hoy = date.today()
+    if reserva.estado_id == 3:
+        return jsonify({"error": "La reserva ya está cancelada"}), 400
+
+    if reserva.fecha_inicio <= hoy:
+        return jsonify({"error": "No se puede cancelar una reserva que ya comenzó o finalizó"}), 400
+
+    reserva.estado_id = 3  # Cancelada
+    db.session.commit()
+
+    return jsonify({
+        "id": reserva.id,
+        "vehiculo_id": reserva.vehiculo_id,
+        "fecha_inicio": reserva.fecha_inicio.isoformat(),
+        "fecha_fin": reserva.fecha_fin.isoformat(),
+        "estado_id": reserva.estado_id,
+        "estado_nombre": reserva.estado.nombre,
+        "pagada": reserva.pagada,
+        "monto_total": reserva.monto_total
+    })
+
+
+
+def obtener_reservas_por_usuario(usuario_id):
+    return (
+        Reserva.query
+        .options(joinedload(Reserva.estado))  # Trae el objeto estado con su nombre
+        .filter_by(usuario_id=usuario_id)
+        .all()
+    )
+
 @reservas_bp.route('/simular-pago/<int:reserva_id>', methods=['POST'])
 def simular_pago(reserva_id):
     # Carga la reserva y sus relaciones CON joinedload, pero SIN Reserva.estado
@@ -34,7 +152,7 @@ def simular_pago(reserva_id):
     # Y el campo 'estado' (string) para actualizar el estado textual en la misma tabla
     if not reserva.pagada: # Si el campo 'pagada' es False (o 0)
         reserva.pagada = True # Marca como pagada
-        # reserva.estado = 'pagada' # Actualiza también el campo de texto 'estado' a 'pagada'
+        reserva.estado_id = 2
 
         db.session.commit()
 
