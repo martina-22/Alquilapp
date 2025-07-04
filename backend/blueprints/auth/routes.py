@@ -219,6 +219,10 @@ def update_profile():
 def forgot_password():
     data = request.get_json()
     email = data.get('email')
+    # chequeo que el mail esté en la base de datos
+    user = Usuario.query.filter_by(email=email).first()
+    if not user:
+        return jsonify({'message': 'El email no está registrado.'}), 404
 
     # Generar código de 6 dígitos
     codigo = str(random.randint(100000, 999999))

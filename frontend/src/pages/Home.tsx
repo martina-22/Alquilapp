@@ -273,7 +273,7 @@ useEffect(() => {
         {/* Header */}
         <AppBar position="static" color="inherit" elevation={1}>
           <Toolbar sx={{ justifyContent: 'space-between', px: { xs: 2, md: 4 }, py: { xs: 1, md: 2 } }}>
-            <Box component="img" src="src/assets/logo.png" alt="AlquilApp Car" sx={{ height: { xs: 100, md: 120 } }} />
+            <Box component="img" src="src/assets/logo.png" alt="AlquilApp Car" sx={{ height: { xs: 150, md: 150 } }} />
             <Box
             sx={{
               display: 'flex',
@@ -284,76 +284,77 @@ useEffect(() => {
           >
             {!logueado ? (
               <Button
+                variant="contained"
+                color="secondary"
+                component={RouterLink}
+                to="/login"
+                sx={{
+                  px: 3,
+                  py: 1.5,
+                  fontWeight: 'bold',
+                  width: '140px',
+                  whiteSpace: 'nowrap',      
+                  overflow: 'hidden',          
+                }}
+              >
+                Iniciar sesión
+              </Button>
+            ) : (
+              <>
+                <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1, mb: 1 }}>
+                  <Button
                     variant="contained"
                     color="secondary"
-                    component={RouterLink}
-                    to="/login"
                     sx={{
                       px: 3,
                       py: 1.5,
                       fontWeight: 'bold',
                       width: '140px',
-                      whiteSpace: 'nowrap',      
-                      overflow: 'hidden',          
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
                     }}
+                    component={RouterLink}
+                    to="/verreservas"
                   >
-                    Iniciar sesión
+                    Ver reservas
                   </Button>
-
-            ) : (
-              <>
-              <Button
-                variant="contained"
-                color="secondary"
-                sx={{
+                  <Button
+                    variant="contained"
+                    color="secondary"
+                    sx={{
                       px: 3,
                       py: 1.5,
                       fontWeight: 'bold',
                       width: '140px',
-                      whiteSpace: 'nowrap',      
-                      overflow: 'hidden',          
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
                     }}
-                component={RouterLink}
-                to="/profile"
-              >
-                Ver perfil
-              </Button>
-               <Button
-                variant="contained"
-                color="secondary"
-                sx={{
-                      px: 3,
-                      py: 1.5,
-                      fontWeight: 'bold',
-                      width: '140px',
-                      whiteSpace: 'nowrap',      
-                      overflow: 'hidden',          
-                    }}
-                component={RouterLink}
-                to="/verreservas"
-              >
-                Ver reservas
-              </Button>
-              <Button
-                variant="outlined"
-                color="secondary"
-                sx={{
-                      px: 3,
-                      py: 1.5,
-                      fontWeight: 'bold',
-                      width: '140px',
-                      whiteSpace: 'nowrap',      
-                      overflow: 'hidden',          
-                    }}
-                onClick={() => {
-                  localStorage.removeItem('token');
-                  localStorage.removeItem('usuario_id');
-                  setLogueado(false);
-                  navigate('/logout'); // Redirige al home u otra página después del logout
-                }}
-              >
-                Cerrar sesión
-              </Button>
+                    component={RouterLink}
+                    to="/profile"
+                  >
+                    Ver perfil
+                  </Button>
+                </Box>
+                <Button
+                  variant="outlined"
+                  color="secondary"
+                  sx={{
+                    px: 3,
+                    py: 1.5,
+                    fontWeight: 'bold',
+                    width: '140px',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                  }}
+                  onClick={() => {
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('usuario_id');
+                    setLogueado(false);
+                    navigate('/logout');
+                  }}
+                >
+                  Cerrar sesión
+                </Button>
               </>
             )}
           </Box>
