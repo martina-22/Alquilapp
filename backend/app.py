@@ -21,10 +21,9 @@ def create_app():
     app.config['MAIL_SERVER'] = 'smtp.gmail.com'
     app.config['MAIL_PORT'] = 587
     app.config['MAIL_USE_TLS'] = True
-    #app.config['MAIL_USERNAME'] = 'anitaormellob@gmail.com'
-    app.config['MAIL_USERNAME'] = 'martigarcia.1407@gmail.com'
-    app.config['MAIL_PASSWORD'] = 'gfozycyoevisofnm'
-    app.config['MAIL_DEFAULT_SENDER'] = 'martigarcia.1407@gmail.com'
+    app.config['MAIL_USERNAME'] = 'anitaormellob@gmail.com'
+    app.config['MAIL_PASSWORD'] = 'sjxnsktixsdxigib'
+    app.config['MAIL_DEFAULT_SENDER'] = 'anitaormellob@gmail.com'
 
     # ✅ Habilitar CORS correctamente (sin duplicar headers)
     CORS(app, supports_credentials=True, resources={r"/*": {"origins": "http://localhost:5173"}})
@@ -43,7 +42,6 @@ def create_app():
     from blueprints.pagos.routes import pagos_bp
     from blueprints.sucursal.routes import sucursales_bp
     app.register_blueprint(sucursales_bp, url_prefix="/sucursales")
-
     app.register_blueprint(auth_bp, url_prefix="/auth")
     app.register_blueprint(vehiculos_bp, url_prefix="/vehiculos")
     app.register_blueprint(reservas_bp, url_prefix="/reservas")

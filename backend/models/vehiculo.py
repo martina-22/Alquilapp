@@ -20,3 +20,4 @@ class Vehiculo(db.Model):
     politica_cancelacion = db.relationship("PoliticaCancelacion", back_populates="vehiculos")
     estado = db.relationship("EstadoVehiculo", back_populates="vehiculos")
     reservas = db.relationship("Reserva", back_populates="vehiculo")
+    activo = db.Column(db.Boolean, default=True)

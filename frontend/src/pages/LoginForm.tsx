@@ -73,7 +73,7 @@ export default function LoginForm() {
 
       // 🔁 Redirigir según rol
       if (data.rol === 'admin') {
-        navigate('/verflota');
+        navigate('/HomeAdmin');
       } else {
         navigate('/');
       }
@@ -113,7 +113,7 @@ export default function LoginForm() {
     localStorage.setItem('rol', data.rol);
 
     if (data.rol === 'admin') {
-      navigate('/ver-flota');
+      navigate('/HomeAdmin');
     } else {
       navigate('/');
     }

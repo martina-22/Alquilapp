@@ -12,6 +12,7 @@ class Usuario(db.Model):
     contrasena = db.Column(db.String(100), nullable=False)
     es_admin = db.Column(db.Boolean, default=False)
     es_empleado = db.Column(db.Boolean, default=False)
+    activo = db.Column(db.Boolean, default=True, nullable=False)
 
     reservas = db.relationship("Reserva", back_populates="usuario")
     administrador = db.relationship('Administrador', back_populates='usuario', uselist=False)

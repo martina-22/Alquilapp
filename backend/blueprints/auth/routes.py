@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify,session
 from datetime import datetime, date
 from models.usuario import Usuario
+from models.empleado import Empleado
 from flask_mail import Message
 from extensions import mail, db
 from flask_cors import CORS
@@ -60,6 +61,73 @@ def register():
 
     return jsonify({'message': 'Usuario registrado con éxito'}), 201
 
+# -------------------- REGISTRO EMPLEADO--------------------
+@auth_bp.route('/register-empleado', methods=['POST'])
+@jwt_required()
+def register_empleado():
+    data = request.get_json()
+    user_id = get_jwt_identity()
+    current_user = Usuario.query.get(int(user_id))
+
+    if not current_user or not current_user.es_admin:
+        return jsonify({'message': 'Solo un administrador puede crear empleados'}), 403
+
+    usuario_existente = Usuario.query.filter_by(email=data['email']).first()
+
+    if usuario_existente:
+        if usuario_existente.activo:
+            return jsonify({'message': 'El correo ya está registrado en un usuario activo'}), 400
+        else:
+            return jsonify({
+                'message': f"El correo '{usuario_existente.email}' ya existe pero el usuario está eliminado. "
+                        "Puedes recuperarlo desde la sección de empleados inactivos."
+            }), 400
+
+    try:
+        fecha_nac = datetime.strptime(data['fecha_nacimiento'], '%Y-%m-%d').date()
+    except ValueError:
+        return jsonify({'message': 'Formato de fecha inválido, debe ser YYYY-MM-DD'}), 400
+
+    if calcular_edad(fecha_nac) < 18:
+        return jsonify({'message': 'El empleado debe ser mayor de edad'}), 400
+
+    if len(data['contrasena']) < 8:
+        return jsonify({'message': 'La contraseña debe tener al menos 8 caracteres'}), 400
+
+    hashed_password = bcrypt.hashpw(data['contrasena'].encode('utf-8'), bcrypt.gensalt())
+
+    nuevo_usuario = Usuario(
+        nombre=data['nombre'],
+        apellido=data['apellido'],
+        dni=data['dni'],
+        fecha_nacimiento=fecha_nac,
+        telefono=data['telefono'],
+        email=data['email'],
+        contrasena=hashed_password.decode('utf-8'),
+        es_admin=False,
+        es_empleado=True,
+        activo=True
+    )
+
+    db.session.add(nuevo_usuario)
+    db.session.flush()
+
+    sucursal_id = data.get('sucursal_id')
+    if not sucursal_id:
+        return jsonify({'message': 'Falta el ID de sucursal para el empleado'}), 400
+
+    cantidad_empleados = Empleado.query.count() + 1
+    numero_empleado = f"EMP{cantidad_empleados:04d}"
+
+    nuevo_empleado = Empleado(
+        id=nuevo_usuario.id,
+        numero_empleado=numero_empleado,
+        sucursal_id=sucursal_id
+    )
+    db.session.add(nuevo_empleado)
+    db.session.commit()
+
+    return jsonify({'message': 'Empleado registrado con éxito'}), 201
 
 # -------------------- LOGIN --------------------
 @auth_bp.route('/login', methods=['POST'])
@@ -72,13 +140,16 @@ def login():
     if not user or not bcrypt.checkpw(password.encode('utf-8'), user.contrasena.encode('utf-8')):
         return jsonify({'message': 'Los datos ingresados son incorrectos'}), 401
     
+    if not user.activo:
+        return jsonify({'message': 'Cuenta inactiva. Contacte al administrador'}), 403
+
     if user.es_admin:
         codigo = str(random.randint(1000, 9999))
         codigos_2fa[email] = codigo
 
         msg = Message(
             subject="Código de verificación",
-            recipients=["martigarcia.1407@gmail.com"],
+            recipients=["anitaormellob@gmail.com"],
             body=f"El código de verificación es: {codigo}"
         )
         mail.send(msg)
