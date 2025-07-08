@@ -1,5 +1,6 @@
 import {
-  Box, Typography, Card, CardContent, CircularProgress, Alert, Button, Dialog, DialogTitle, DialogContent, DialogActions, Grid
+  Box, Typography, CircularProgress, Alert, Button, Dialog, DialogTitle, DialogContent, DialogActions, Grid,
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper // <-- AÑADIDOS ESTOS COMPONENTES
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import React, { useEffect, useState } from 'react';
@@ -12,7 +13,7 @@ interface Usuario {
   email: string;
   telefono?: string;
   activo?: boolean;
-  rol: number | string; // Aseguramos que rol sea number o string
+  rol: number | string;
 }
 
 export default function VerUsuarios() {
@@ -128,68 +129,125 @@ export default function VerUsuarios() {
   if (loading) return <Box display="flex" justifyContent="center" mt={4}><CircularProgress /></Box>;
   if (error) return <Alert severity="error">{error}</Alert>;
 
-
-  // cambiar el navigate --> ir a pagina de inicio
   return (
     <Box p={4}>
-      <Button variant="outlined" color="secondary" onClick={() => navigate(-1)} sx={{ mb: 2 }}> 
+      <Button variant="outlined" color="secondary" onClick={() => navigate(-1)} sx={{ mb: 2 }}>
         Volver
       </Button>
 
-      <Typography variant="h4" gutterBottom>Usuarios Activos</Typography>
-      <Grid container spacing={2} mb={4}>
-        {usuariosActivos.map((usuario: Usuario) => (
-          <Grid item xs={12} md={6} key={usuario.id}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6">{usuario.nombre} {usuario.apellido}</Typography>
-                <Typography>Email: {usuario.email}</Typography>
-                {usuario.telefono && <Typography>Teléfono: {usuario.telefono}</Typography>}
-                <Typography color="green">Activo</Typography>
-                <Button
-                  variant="outlined"
-                  color="secondary"
-                  sx={{ px: 3, py: 1.5, fontWeight: 'bold' }}
-                  onClick={() => handleOpenDeleteDialog(usuario)}
-                >
-                  Eliminar perfil
-                </Button>
-              </CardContent>
-            </Card>
-          </Grid>
-        ))}
-      </Grid>
+      {/* Grid container principal para las dos columnas de usuarios */}
+      <Grid container spacing={4}> {/* spacing para espacio entre las dos columnas principales */}
 
-      <Typography variant="h4" gutterBottom>Usuarios Inactivos</Typography>
-      <Grid container spacing={2}>
-        {usuariosInactivos.map((usuario: Usuario) => (
-          <Grid item xs={12} md={6} key={usuario.id}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6">{usuario.nombre} {usuario.apellido}</Typography>
-                <Typography>Email: {usuario.email}</Typography>
-                {usuario.telefono && <Typography>Teléfono: {usuario.telefono}</Typography>}
-                <Typography color="red">Inactivo</Typography>
-                <Button
-                  variant="outlined"
-                  color="secondary"
-                  sx={{ px: 3, py: 1.5, fontWeight: 'bold' }}
-                  onClick={() => handleOpenRestoreDialog(usuario)}
-                >
-                  Restaurar perfil
-                </Button>
-              </CardContent>
-            </Card>
-          </Grid>
-        ))}
-      </Grid>
+        {/* Columna para Usuarios Activos */}
+        <Grid item xs={12} md={6}>
+          <Typography variant="h4" gutterBottom>Usuarios Activos</Typography>
+          <TableContainer component={Paper}>
+            <Table sx={{ minWidth: 650 }} aria-label="tabla de usuarios activos">
+              <TableHead>
+                <TableRow>
+                  <TableCell>Nombre Completo</TableCell>
+                  <TableCell>Email</TableCell>
+                  <TableCell>Teléfono</TableCell>
+                  <TableCell align="center">Estado</TableCell>
+                  <TableCell align="right">Acciones</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {usuariosActivos.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} align="center">No hay usuarios activos.</TableCell>
+                  </TableRow>
+                ) : (
+                  usuariosActivos.map((usuario: Usuario) => (
+                    <TableRow
+                      key={usuario.id}
+                      sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
+                    >
+                      <TableCell component="th" scope="row">
+                        {usuario.nombre} {usuario.apellido}
+                      </TableCell>
+                      <TableCell>{usuario.email}</TableCell>
+                      <TableCell>{usuario.telefono || 'N/A'}</TableCell> {/* Muestra 'N/A' si no hay teléfono */}
+                      <TableCell align="center">
+                        <Typography color="green">Activo</Typography>
+                      </TableCell>
+                      <TableCell align="right">
+                        <Button
+                          variant="outlined"
+                          color="secondary"
+                          size="small" // Tamaño pequeño para encajar mejor en la celda
+                          onClick={() => handleOpenDeleteDialog(usuario)}
+                        >
+                          Eliminar
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Grid>
+
+        {/* Columna para Usuarios Inactivos */}
+        <Grid item xs={12} md={6}> {/* En pantallas pequeñas ocupa todo el ancho, en medianas y grandes la mitad */}
+          <Typography variant="h4" gutterBottom>Usuarios Inactivos</Typography>
+          <TableContainer component={Paper}> {/* Usamos TableContainer con Paper para el estilo de tarjeta */}
+            <Table sx={{ minWidth: 650 }} aria-label="tabla de usuarios inactivos">
+              <TableHead>
+                <TableRow>
+                  <TableCell>Nombre Completo</TableCell>
+                  <TableCell>Email</TableCell>
+                  <TableCell>Teléfono</TableCell>
+                  <TableCell align="center">Estado</TableCell>
+                  <TableCell align="right">Acciones</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {usuariosInactivos.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} align="center">No hay usuarios inactivos.</TableCell>
+                  </TableRow>
+                ) : (
+                  usuariosInactivos.map((usuario: Usuario) => (
+                    <TableRow
+                      key={usuario.id}
+                      sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
+                    >
+                      <TableCell component="th" scope="row">
+                        {usuario.nombre} {usuario.apellido}
+                      </TableCell>
+                      <TableCell>{usuario.email}</TableCell>
+                      <TableCell>{usuario.telefono || 'N/A'}</TableCell> {/* Muestra 'N/A' si no hay teléfono */}
+                      <TableCell align="center">
+                        <Typography color="red">Inactivo</Typography>
+                      </TableCell>
+                      <TableCell align="right">
+                        <Button
+                          variant="outlined"
+                          color="secondary"
+                          size="small" // Tamaño pequeño para encajar mejor en la celda
+                          onClick={() => handleOpenRestoreDialog(usuario)}
+                        >
+                          Restaurar
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Grid>
+
+      </Grid> {/* Cierre del Grid container principal de las columnas */}
 
       {/* Diálogo de eliminar */}
       <Dialog open={deleteDialogOpen} onClose={handleCloseDeleteDialog}>
         <DialogTitle>¿Eliminar perfil?</DialogTitle>
         <DialogContent>
           <Typography>
-            ¿Estás seguro de que deseas eliminar el perfil de <b>{usuarioAEliminar?.nombre} {usuarioAEliminar?.apellido}</b>? Esta acción no se puede deshacer.
+            ¿Estás seguro de que deseas eliminar el perfil de <b>{usuarioAEliminar?.nombre} {usuarioAEliminar?.apellido}</b>?
           </Typography>
           {deleteError && <Alert severity="error" sx={{ mt: 2 }}>{deleteError}</Alert>}
         </DialogContent>

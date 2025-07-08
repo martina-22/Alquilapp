@@ -273,6 +273,8 @@ CREATE TABLE `usuario` (
   `contrasena` varchar(100) NOT NULL,
   `es_admin` tinyint(1) DEFAULT NULL,
   `es_empleado` tinyint(1) DEFAULT NULL,
+  `activo` boolean DEFAULT TRUE,
+  `rol` tinyint(1) DEFAULT 3 COMMENT '3: Cliente, 2: Empleado, 1: Administrador',
   PRIMARY KEY (`id`),
   UNIQUE KEY `dni` (`dni`),
   UNIQUE KEY `email` (`email`)

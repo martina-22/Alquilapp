@@ -31,6 +31,7 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { Dayjs } from 'dayjs';
+import dayjs from 'dayjs';
 import 'dayjs/locale/es';
 
 // Importa react-slick y sus estilos
@@ -151,11 +152,16 @@ interface Sucursal {
 const HomePage: React.FC = () => {
   const navigate = useNavigate();
 
+  // Estados para el calendaio
   const [fechaRetiro, setFechaRetiro] = useState<Dayjs | null>(null);
   const [fechaDevolucion, setFechaDevolucion] = useState<Dayjs | null>(null);
-  const [sucursalSeleccionada, setSucursalSeleccionada] = useState(''); // Renombrado para evitar conflicto
   const [horaRetiro, setHoraRetiro] = useState('');
   const [horaDevolucion, setHoraDevolucion] = useState('');
+  const today = dayjs();
+  const minDateForRetiro = today.startOf('day'); // Permite seleccionar desde hoy.
+  const minDateForDevolucion = fechaRetiro ? dayjs(fechaRetiro).startOf('day') : minDateForRetiro;
+
+  const [sucursalSeleccionada, setSucursalSeleccionada] = useState(''); // Renombrado para evitar conflicto
 
   // Nuevos estados para las sucursales dinámicas
   const [sucursalesData, setSucursalesData] = useState<Sucursal[]>([]);
@@ -414,6 +420,7 @@ useEffect(() => {
                   value={fechaRetiro}
                   onChange={(newValue) => setFechaRetiro(newValue)}
                   format="DD/MM/YYYY"
+                  minDate={minDateForRetiro} // Establece la fecha mínima para hoy
                   slotProps={{ textField: { fullWidth: true, variant: 'outlined' } }}
                 />
               </Box>
@@ -428,6 +435,7 @@ useEffect(() => {
                   value={fechaDevolucion}
                   onChange={(newValue) => setFechaDevolucion(newValue)}
                   format="DD/MM/YYYY"
+                  minDate={minDateForDevolucion} // Establece la fecha mínima según la fecha de retiro
                   slotProps={{ textField: { fullWidth: true, variant: 'outlined' } }}
                 />
               </Box>

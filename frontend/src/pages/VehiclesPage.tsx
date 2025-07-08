@@ -88,7 +88,7 @@ function VehiclesPage() {
     window.history.replaceState({}, '', `${window.location.pathname}?${params.toString()}`);
   };
 
-  // Fetch sucursales when component mounts
+
   useEffect(() => {
     const fetchSucursales = async () => {
       try {
@@ -169,11 +169,22 @@ function VehiclesPage() {
     window.history.replaceState({}, '', `${window.location.pathname}?${params.toString()}`);
   };
 
-  if (loading) {
+  // --- Helper para obtener el nombre de la sucursal ---
+  // Creamos un mapa de sucursal_id a nombre para una búsqueda eficiente
+  const sucursalNameMap = React.useMemo(() => {
+    const map = new Map<number, string>();
+    sucursalesData.forEach(sucursal => {
+      map.set(sucursal.id, `${sucursal.nombre} (${sucursal.localidad})`);
+    });
+    return map;
+  }, [sucursalesData]);
+
+
+  if (loading || loadingSucursales) {
     return (
       <Container maxWidth="md" sx={{ mt: 4, mb: 4, textAlign: 'center' }}>
         <CircularProgress />
-        <Typography variant="h6">Cargando vehículos...</Typography>
+        <Typography variant="h6">Cargando vehículos y sucursales...</Typography>
       </Container>
     );
   }
@@ -182,6 +193,14 @@ function VehiclesPage() {
     return (
       <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
         <Alert severity="error">{error}</Alert>
+      </Container>
+    );
+  }
+
+  if (errorSucursales) { // error específico si las sucursales fallaron
+    return (
+      <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
+        <Alert severity="error">{errorSucursales}</Alert>
       </Container>
     );
   }
@@ -220,65 +239,73 @@ function VehiclesPage() {
       <Box sx={{ mt: 4 }}>
         {vehicles.length === 0 ? (
           <Typography variant="h6" align="center" color="text.secondary">
-            No hay vehículos disponibles para esta categoría.
+            No hay vehículos disponibles para esta categoría o sucursal.
           </Typography>
         ) : (
           <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 3 }}>
-            {vehicles.map((vehicle) => (
-              <Box key={vehicle.id} sx={{ p: 2, border: '1px solid #eee', borderRadius: '8px', boxShadow: 1 }}>
-                <Typography variant="h6">{vehicle.marca} {vehicle.modelo}</Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Categoría: {vehicle.categoria}
-                </Typography>
-                <Typography variant="body2">Año: {vehicle.anio}</Typography>
-                <Typography variant="body2">Capacidad: {vehicle.capacidad} pasajeros</Typography>
-                <Typography variant="h6" color="secondary" sx={{ mt: 2 }}>
-                  ${vehicle.precio_dia} / día
-                </Typography>
+            {vehicles.map((vehicle) => {
+              // Obtenemos el nombre de la sucursal usando el mapa
+              const sucursalName = sucursalNameMap.get(vehicle.sucursal_id) || 'Desconocida';
 
-                {/* Sección de la Política de Cancelación Desplegable */}
-                {vehicle.politica_cancelacion_details ? (
-                  <Accordion sx={{ mt: 2, boxShadow: 'none', '&:before': { display: 'none' }, borderRadius: 'px' }}>
-                    <AccordionSummary
-                      expandIcon={<ExpandMoreIcon />}
-                      aria-controls={`panel-politica-${vehicle.id}-content`}
-                      id={`panel-politica-${vehicle.id}-header`}
-                      sx={{ minHeight: '40px', '& .MuiAccordionSummary-content': { margin: '8px 0' } }}
-                    >
-                      <Typography variant="subtitle2" color="secondary.text" sx={{ fontWeight: 'bold' }}>
-                        Política de Cancelación
-                      </Typography>
-                    </AccordionSummary>
-                    <AccordionDetails>
-                      <Typography variant="body2">
-                        Descripción: {vehicle.politica_cancelacion_details.descripcion}
-                      </Typography>
-                      <Typography variant="body2">
-                        Días de penalización: {vehicle.politica_cancelacion_details.penalizacion_dias}
-                      </Typography>
-                      <Typography variant="body2">
-                        Porcentaje de penalización: {vehicle.politica_cancelacion_details.porcentaje_penalizacion}%
-                      </Typography>
-                    </AccordionDetails>
-                  </Accordion>
-                ) : (
-                  <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-                    Política de cancelación no disponible.
+              return (
+                <Box key={vehicle.id} sx={{ p: 2, border: '1px solid #eee', borderRadius: '8px', boxShadow: 1 }}>
+                  <Typography variant="h6">{vehicle.marca} {vehicle.modelo}</Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Categoría: {vehicle.categoria}
                   </Typography>
-                )}
-                <Button
-                  variant="contained"
-                  fullWidth
-                  color="secondary"
-                  sx={{ mt: 2 }}
-                  component={RouterLink}
-                  to={`/reservar?vehiculo_id=${vehicle.id}&fecha_inicio=${fechaInicio}&fecha_fin=${fechaFin}&hora_retiro=${horaRetiro}&hora_devolucion=${horaDevolucion}`}
-                  disabled={!fechaInicio || !fechaFin || !horaRetiro || !horaDevolucion}
-                >
-                  Reservar
-                </Button>
-              </Box>
-            ))}
+                  <Typography variant="body2">Año: {vehicle.anio}</Typography>
+                  <Typography variant="body2">Capacidad: {vehicle.capacidad} pasajeros</Typography>
+                  <Typography variant="body2">{sucursalName}</Typography>
+                  <Typography variant="h6" color="secondary" sx={{ mt: 2 }}>
+                    ${vehicle.precio_dia} / día
+                  </Typography>
+
+                  {/* Sección de la Política de Cancelación Desplegable */}
+                  {vehicle.politica_cancelacion_details ? (
+                    <Accordion sx={{ mt: 2, boxShadow: 'none', '&:before': { display: 'none' }, borderRadius: 'px' }}>
+                      <AccordionSummary
+                        expandIcon={<ExpandMoreIcon />}
+                        aria-controls={`panel-politica-${vehicle.id}-content`}
+                        id={`panel-politica-${vehicle.id}-header`}
+                        sx={{ minHeight: '40px', '& .MuiAccordionSummary-content': { margin: '8px 0' } }}
+                      >
+                        <Typography variant="subtitle2" color="secondary.text" sx={{ fontWeight: 'bold' }}>
+                          Política de Cancelación
+                        </Typography>
+                      </AccordionSummary>
+                      <AccordionDetails>
+                        <Typography variant="body2">
+                          Descripción: {vehicle.politica_cancelacion_details.descripcion}
+                        </Typography>
+                        <Typography variant="body2">
+                          Días de anticipación: {vehicle.politica_cancelacion_details.penalizacion_dias}
+                        </Typography>
+                        <Typography variant="body2">
+                          Porcentaje de penalización: {vehicle.politica_cancelacion_details.porcentaje_penalizacion}%
+                        </Typography>
+                      </AccordionDetails>
+                    </Accordion>
+                  ) : (
+                    <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+                      Política de cancelación no disponible.
+                    </Typography>
+                  )}
+                  {fechaInicio && fechaFin && horaRetiro && horaDevolucion && (
+                    <Button
+                      variant="contained"
+                      fullWidth
+                      color="secondary"
+                      sx={{ mt: 2 }}
+                      component={RouterLink}
+                      to={`/reservar?vehiculo_id=${vehicle.id}&fecha_inicio=${fechaInicio}&fecha_fin=${fechaFin}&hora_retiro=${horaRetiro}&hora_devolucion=${horaDevolucion}`}
+                      disabled={!fechaInicio || !fechaFin || !horaRetiro || !horaDevolucion}
+                    >
+                      Reservar
+                    </Button>
+                  )}
+                </Box>
+              );
+            })}
           </Box>
         )}
       </Box>
