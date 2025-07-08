@@ -71,6 +71,10 @@ export default function RecuperarSucursal() {
             <Box display="flex" justifyContent="center" mt={4}>
               <CircularProgress />
             </Box>
+          ) : sucursalesInactivas.length === 0 ? (
+            <Typography mt={4} align="center" color="textSecondary">
+              No hay sucursales inactivas para recuperar.
+            </Typography>
           ) : (
             <>
               <FormControl fullWidth sx={{ mt: 4 }}>

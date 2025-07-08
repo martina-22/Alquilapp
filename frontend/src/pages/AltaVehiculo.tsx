@@ -70,6 +70,10 @@ export default function RecuperarVehiculo() {
             <Box display="flex" justifyContent="center" mt={4}>
               <CircularProgress />
             </Box>
+          ) : vehiculosInactivos.length === 0 ? (
+            <Typography mt={4} align="center" color="textSecondary">
+              No hay vehículos inactivos para recuperar.
+            </Typography>
           ) : (
             <>
               <FormControl fullWidth sx={{ mt: 4 }}>

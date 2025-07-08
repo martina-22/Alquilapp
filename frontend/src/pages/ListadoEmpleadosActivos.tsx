@@ -101,40 +101,47 @@ export default function ListadoEmpleadosActivos() {
             Empleados Activos
           </Typography>
 
-          <TableContainer component={Paper} sx={{ mt: 3 }}>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Nombre</TableCell>
-                  <TableCell>Apellido</TableCell>
-                  <TableCell>Email</TableCell>
-                  <TableCell>Teléfono</TableCell>
-                  <TableCell>N° Empleado</TableCell>
-                  <TableCell>Sucursal</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {empleados.map(emp => (
-                  <TableRow key={emp.numero_empleado}>
-                    <TableCell>{emp.nombre}</TableCell>
-                    <TableCell>{emp.apellido}</TableCell>
-                    <TableCell>{emp.email}</TableCell>
-                    <TableCell>{emp.telefono}</TableCell>
-                    <TableCell>{emp.numero_empleado}</TableCell>
-                    <TableCell>{sucursales[emp.sucursal_id] || emp.sucursal_id}</TableCell>
-                    <TableCell>
-                      <IconButton color="primary" onClick={() => handleModificar(emp.id)}>
-                        <EditIcon />
-                      </IconButton>
-                      <IconButton color="error" onClick={() => handleClickEliminar(emp.id)}>
-                        <DeleteIcon />
-                      </IconButton>
-                    </TableCell>
+          {empleados.length > 0 ? (
+            <TableContainer component={Paper} sx={{ mt: 3 }}>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Nombre</TableCell>
+                    <TableCell>Apellido</TableCell>
+                    <TableCell>Email</TableCell>
+                    <TableCell>Teléfono</TableCell>
+                    <TableCell>N° Empleado</TableCell>
+                    <TableCell>Sucursal</TableCell>
+                    <TableCell>Acciones</TableCell>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
+                </TableHead>
+                <TableBody>
+                  {empleados.map(emp => (
+                    <TableRow key={emp.numero_empleado}>
+                      <TableCell>{emp.nombre}</TableCell>
+                      <TableCell>{emp.apellido}</TableCell>
+                      <TableCell>{emp.email}</TableCell>
+                      <TableCell>{emp.telefono}</TableCell>
+                      <TableCell>{emp.numero_empleado}</TableCell>
+                      <TableCell>{sucursales[emp.sucursal_id] || emp.sucursal_id}</TableCell>
+                      <TableCell>
+                        <IconButton color="primary" onClick={() => handleModificar(emp.id)}>
+                          <EditIcon />
+                        </IconButton>
+                        <IconButton color="error" onClick={() => handleClickEliminar(emp.id)}>
+                          <DeleteIcon />
+                        </IconButton>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          ) : (
+            <Typography align="center" color="textSecondary" mt={4}>
+              No hay empleados activos registrados.
+            </Typography>
+          )}
 
           {/* Diálogo de confirmación */}
           <Dialog open={dialogOpen} onClose={handleCancelarEliminar}>

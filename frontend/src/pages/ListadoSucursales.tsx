@@ -146,36 +146,43 @@ export default function ListadoSucursales() {
           )}
 
           {!loading && (
-            <TableContainer component={Paper} sx={{ mt: 3 }}>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell><strong>Nombre</strong></TableCell>
-                    <TableCell><strong>Localidad</strong></TableCell>
-                    <TableCell><strong>Dirección</strong></TableCell>
-                    <TableCell><strong>Teléfono</strong></TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {sucursales.map((sucursal) => (
-                    <TableRow key={sucursal.id}>
-                      <TableCell>{sucursal.nombre}</TableCell>
-                      <TableCell>{sucursal.localidad}</TableCell>
-                      <TableCell>{sucursal.direccion}</TableCell>
-                      <TableCell>{sucursal.telefono}</TableCell>
-                      <TableCell align="center">
-                        <IconButton color="primary" onClick={() => handleEditar(sucursal.id)}>
-                          <EditIcon />
-                        </IconButton>
-                        <IconButton color="error" onClick={() => handleEliminar(sucursal.id)}>
-                          <DeleteIcon />
-                        </IconButton>
-                      </TableCell>
+            sucursales.length > 0 ? (
+              <TableContainer component={Paper} sx={{ mt: 3 }}>
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell><strong>Nombre</strong></TableCell>
+                      <TableCell><strong>Localidad</strong></TableCell>
+                      <TableCell><strong>Dirección</strong></TableCell>
+                      <TableCell><strong>Teléfono</strong></TableCell>
+                      <TableCell align="center"><strong>Acciones</strong></TableCell>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
+                  </TableHead>
+                  <TableBody>
+                    {sucursales.map((sucursal) => (
+                      <TableRow key={sucursal.id}>
+                        <TableCell>{sucursal.nombre}</TableCell>
+                        <TableCell>{sucursal.localidad}</TableCell>
+                        <TableCell>{sucursal.direccion}</TableCell>
+                        <TableCell>{sucursal.telefono}</TableCell>
+                        <TableCell align="center">
+                          <IconButton color="primary" onClick={() => handleEditar(sucursal.id)}>
+                            <EditIcon />
+                          </IconButton>
+                          <IconButton color="error" onClick={() => handleEliminar(sucursal.id)}>
+                            <DeleteIcon />
+                          </IconButton>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            ) : (
+              <Typography align="center" color="textSecondary" mt={4}>
+                No hay sucursales registradas para mostrar.
+              </Typography>
+            )
           )}
         </CardContent>
       </Card>

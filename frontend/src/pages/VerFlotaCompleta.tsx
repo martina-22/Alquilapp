@@ -132,47 +132,53 @@ export default function ListadoFlota() {
           )}
 
           {!loading && !mostrandoFlotaPorSucursal && (
-            <TableContainer component={Paper} sx={{ mt: 3 }}>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell><strong>Marca</strong></TableCell>
-                    <TableCell><strong>Modelo</strong></TableCell>
-                    <TableCell><strong>Año</strong></TableCell>
-                    <TableCell><strong>Categoría</strong></TableCell>
-                    <TableCell><strong>Capacidad</strong></TableCell>
-                    <TableCell><strong>Matrícula</strong></TableCell>
-                    <TableCell><strong>Localidad</strong></TableCell>
-                    <TableCell><strong>Precio/Día</strong></TableCell>
-                    <TableCell><strong>Estado</strong></TableCell>
-                    <TableCell align="center"><strong>Acciones</strong></TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {vehiculos.map((vehiculo) => (
-                    <TableRow key={vehiculo.matricula}>
-                      <TableCell>{vehiculo.marca}</TableCell>
-                      <TableCell>{vehiculo.modelo}</TableCell>
-                      <TableCell>{vehiculo.anio}</TableCell>
-                      <TableCell>{vehiculo.tipo}</TableCell>
-                      <TableCell>{vehiculo.capacidad}</TableCell>
-                      <TableCell>{vehiculo.matricula}</TableCell>
-                      <TableCell>{vehiculo.localidad_nombre || 'Sin asignar'}</TableCell>
-                      <TableCell>${vehiculo.precio_por_dia}</TableCell>
-                      <TableCell>{vehiculo.estado_nombre}</TableCell>
-                      <TableCell align="center">
-                        <IconButton color="primary" onClick={() => handleModificar(vehiculo.matricula)}>
-                          <EditIcon />
-                        </IconButton>
-                        <IconButton color="error" onClick={() => handleEliminar(vehiculo.matricula)}>
-                          <DeleteIcon />
-                        </IconButton>
-                      </TableCell>
+            vehiculos.length > 0 ? (
+              <TableContainer component={Paper} sx={{ mt: 3 }}>
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell><strong>Marca</strong></TableCell>
+                      <TableCell><strong>Modelo</strong></TableCell>
+                      <TableCell><strong>Año</strong></TableCell>
+                      <TableCell><strong>Categoría</strong></TableCell>
+                      <TableCell><strong>Capacidad</strong></TableCell>
+                      <TableCell><strong>Matrícula</strong></TableCell>
+                      <TableCell><strong>Localidad</strong></TableCell>
+                      <TableCell><strong>Precio/Día</strong></TableCell>
+                      <TableCell><strong>Estado</strong></TableCell>
+                      <TableCell align="center"><strong>Acciones</strong></TableCell>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
+                  </TableHead>
+                  <TableBody>
+                    {vehiculos.map((vehiculo) => (
+                      <TableRow key={vehiculo.matricula}>
+                        <TableCell>{vehiculo.marca}</TableCell>
+                        <TableCell>{vehiculo.modelo}</TableCell>
+                        <TableCell>{vehiculo.anio}</TableCell>
+                        <TableCell>{vehiculo.tipo}</TableCell>
+                        <TableCell>{vehiculo.capacidad}</TableCell>
+                        <TableCell>{vehiculo.matricula}</TableCell>
+                        <TableCell>{vehiculo.localidad_nombre || 'Sin asignar'}</TableCell>
+                        <TableCell>${vehiculo.precio_por_dia}</TableCell>
+                        <TableCell>{vehiculo.estado_nombre}</TableCell>
+                        <TableCell align="center">
+                          <IconButton color="primary" onClick={() => handleModificar(vehiculo.matricula)}>
+                            <EditIcon />
+                          </IconButton>
+                          <IconButton color="error" onClick={() => handleEliminar(vehiculo.matricula)}>
+                            <DeleteIcon />
+                          </IconButton>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            ) : (
+              <Typography align="center" color="textSecondary" mt={4}>
+                No hay vehículos disponibles para mostrar.
+              </Typography>
+            )
           )}
 
           {!loading && mostrandoFlotaPorSucursal && (

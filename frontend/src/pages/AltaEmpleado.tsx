@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
   Box, Card, CardContent, Typography, Button, MenuItem, Select, InputLabel,
-  FormControl, Alert
+  FormControl, Alert, CircularProgress
 } from '@mui/material';
 
 export default function DarAltaEmpleado() {
@@ -9,11 +9,19 @@ export default function DarAltaEmpleado() {
   const [seleccionado, setSeleccionado] = useState('');
   const [mensaje, setMensaje] = useState('');
   const [esError, setEsError] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetch('http://localhost:5000/usuarios/empleados/inactivos')
       .then(res => res.json())
-      .then(data => setEmpleados(data));
+      .then(data => {
+        setEmpleados(data);
+        setLoading(false);
+      })
+      .catch(() => {
+        setEmpleados([]);
+        setLoading(false);
+      });
   }, []);
 
   const darAlta = async () => {
@@ -35,7 +43,6 @@ export default function DarAltaEmpleado() {
         setMensaje(data.message || 'Error');
       } else {
         setMensaje(data.message || 'Empleado reactivado');
-        // Quitar del listado actual
         setEmpleados(prev => prev.filter(e => e.id !== parseInt(seleccionado)));
         setSeleccionado('');
       }
@@ -53,31 +60,43 @@ export default function DarAltaEmpleado() {
             Dar de Alta Empleado
           </Typography>
 
-          <FormControl fullWidth sx={{ mt: 3 }}>
-            <InputLabel>Empleado Inactivo</InputLabel>
-            <Select
-              value={seleccionado}
-              onChange={(e) => setSeleccionado(e.target.value)}
-              label="Empleado Inactivo"
-            >
-              {empleados.map(emp => (
-                <MenuItem key={emp.id} value={emp.id}>
-                  {emp.numero_empleado} - {emp.nombre} {emp.apellido}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+          {loading ? (
+            <Box display="flex" justifyContent="center" mt={4}>
+              <CircularProgress />
+            </Box>
+          ) : empleados.length === 0 ? (
+            <Typography mt={3} align="center" color="textSecondary">
+              No hay empleados inactivos para reactivar.
+            </Typography>
+          ) : (
+            <>
+              <FormControl fullWidth sx={{ mt: 3 }}>
+                <InputLabel>Empleado Inactivo</InputLabel>
+                <Select
+                  value={seleccionado}
+                  onChange={(e) => setSeleccionado(e.target.value)}
+                  label="Empleado Inactivo"
+                >
+                  {empleados.map(emp => (
+                    <MenuItem key={emp.id} value={emp.id}>
+                      {emp.numero_empleado} - {emp.nombre} {emp.apellido}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
 
-          <Button
-            variant="contained"
-            color="secondary"
-            fullWidth
-            sx={{ mt: 2 }}
-            disabled={!seleccionado}
-            onClick={darAlta}
-          >
-            Confirmar Alta
-          </Button>
+              <Button
+                variant="contained"
+                color="secondary"
+                fullWidth
+                sx={{ mt: 2 }}
+                disabled={!seleccionado}
+                onClick={darAlta}
+              >
+                Confirmar Alta
+              </Button>
+            </>
+          )}
 
           {mensaje && (
             <Alert severity={esError ? 'error' : 'success'} sx={{ mt: 2 }}>
