@@ -15,6 +15,8 @@ class Vehiculo(db.Model):
     sucursal_id = db.Column(db.Integer, db.ForeignKey('sucursal.id'))
     politica_cancelacion_id = db.Column(db.Integer, db.ForeignKey('politica_cancelacion.id'))
     estado_id = db.Column(db.Integer, db.ForeignKey('estado_vehiculo.id'))
+    activo = db.Column(db.Boolean, default=True)
+
 
     sucursal = db.relationship("Sucursal", back_populates="vehiculos")
     politica_cancelacion = db.relationship("PoliticaCancelacion", back_populates="vehiculos")

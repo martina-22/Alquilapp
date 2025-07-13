@@ -129,7 +129,7 @@ export const VerReserva = () => {
     }
   }
 
-  const renderEstadoIcono = (estado: string | undefined, pagada: boolean, fechaFin: string) => {
+  const renderEstadoIcono = (estado: string | undefined, fechaFin: string) => {
   if (!estado) {
     return (
       <Box display="flex" alignItems="center" gap={1}>
@@ -242,7 +242,7 @@ export const VerReserva = () => {
               </Box>
 
               <Box mt={2}>
-                {renderEstadoIcono(reserva.estado_nombre, reserva.pagada, reserva.fecha_fin)}
+                {renderEstadoIcono(reserva.estado_nombre, reserva.fecha_fin)}
               </Box>
             </CardContent>
           </Card>

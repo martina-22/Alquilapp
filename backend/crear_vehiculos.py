@@ -25,7 +25,7 @@ with app.app_context():
     db.session.commit()
 
     # 2. Insertar estados de reserva
-    estados_reserva = ["pendiente", "confirmada", "cancelada"]
+    estados_reserva = ["pendiente", "confirmada", "cancelada","finalizada"]
     for nombre in estados_reserva:
         if not EstadoReserva.query.filter_by(nombre=nombre).first():
             db.session.add(EstadoReserva(nombre=nombre))

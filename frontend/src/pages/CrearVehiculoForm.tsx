@@ -12,6 +12,9 @@ import {
   Select,
 } from '@mui/material';
 import type { SelectChangeEvent } from '@mui/material/Select';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import IconButton from '@mui/material/IconButton';
+import { useNavigate } from 'react-router-dom';
 
 interface FormularioVehiculo {
   patente: string;
@@ -71,6 +74,7 @@ const modelosDisponibles = [
 ];
 
 export default function CrearVehiculoForm() {
+  const navigate = useNavigate();
   const [form, setForm] = useState<FormularioVehiculo>({
     patente: '',
     marca: '',
@@ -219,9 +223,20 @@ const handleTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh" bgcolor="#f0f2f5" padding={2}>
       <Card sx={{ width: '100%', maxWidth: 600, borderRadius: 4, boxShadow: 4 }}>
         <CardContent sx={{ p: 4 }}>
-          <Typography variant="h4" align="center" color="secondary" fontWeight="bold" gutterBottom>
+          
+          <Box position="relative" mb={3}>
+          <IconButton
+            onClick={() => navigate('/GestionFlota')}
+            color="secondary"
+            sx={{ position: 'absolute', left: 0, top: '50%', transform: 'translateY(-50%)' }}
+          >
+            <ArrowBackIcon />
+          </IconButton>
+          <Typography variant="h4" align="center" color="secondary" fontWeight="bold">
             Crear Vehículo
           </Typography>
+        </Box>
+
 
           <Box component="form" onSubmit={handleSubmit} display="flex" flexDirection="column" gap={2} mt={2}>
             <TextField

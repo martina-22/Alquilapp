@@ -22,11 +22,16 @@ import {
   Alert, // Importa Alert para mostrar errores
 } from "@mui/material";
 
+import EmailIcon from '@mui/icons-material/Email';
+import InstagramIcon from '@mui/icons-material/Instagram';
+import PhoneIcon from '@mui/icons-material/Phone';
+
 // Importaciones del DatePicker de MUI X
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { Dayjs } from 'dayjs';
+import dayjs from 'dayjs';
 import 'dayjs/locale/es';
 
 // Importa react-slick y sus estilos
@@ -147,11 +152,16 @@ interface Sucursal {
 const HomePage: React.FC = () => {
   const navigate = useNavigate();
 
+  // Estados para el calendaio
   const [fechaRetiro, setFechaRetiro] = useState<Dayjs | null>(null);
   const [fechaDevolucion, setFechaDevolucion] = useState<Dayjs | null>(null);
-  const [sucursalSeleccionada, setSucursalSeleccionada] = useState(''); // Renombrado para evitar conflicto
   const [horaRetiro, setHoraRetiro] = useState('');
   const [horaDevolucion, setHoraDevolucion] = useState('');
+  const today = dayjs();
+  const minDateForRetiro = today.startOf('day'); // Permite seleccionar desde hoy.
+  const minDateForDevolucion = fechaRetiro ? dayjs(fechaRetiro).startOf('day') : minDateForRetiro;
+
+  const [sucursalSeleccionada, setSucursalSeleccionada] = useState(''); // Renombrado para evitar conflicto
 
   // Nuevos estados para las sucursales dinámicas
   const [sucursalesData, setSucursalesData] = useState<Sucursal[]>([]);
@@ -170,6 +180,9 @@ const HomePage: React.FC = () => {
     {
       pregunta: "¿La política de cancelación es la misma para todos los autos?",
       respuesta: "No, cada auto tiene su propia política de cancelación."
+    },
+    { pregunta: "¿Que se hace si el auto se daña durante el alquiler?",
+      respuesta: "Se debe informar inmediatamente a la empresa."
     }
   ];
 
@@ -184,7 +197,7 @@ const HomePage: React.FC = () => {
 
   const handleCategoryClick = (category: string) => {
     // Navega a la página de vehículos, pasando la categoría como un parámetro de consulta
-    // Por ejemplo, '/vehiculos?categoria=Vehículos%20chicos'
+    // Por ejemplo, '/vehiculos?categoria=Mediano'
     navigate(`/vehiculos?categoria=${encodeURIComponent(category)}`);
   };
 
@@ -234,7 +247,7 @@ const HomePage: React.FC = () => {
   setLogueado(Boolean(token));
 
   if (token && rol === 'admin') {
-    navigate('/ver-flota'); // ⬅️ Cambiá esta ruta por la que uses para admin
+    navigate('/HomeAdmin');
   }
 }, [navigate]);
 
@@ -266,7 +279,7 @@ useEffect(() => {
         {/* Header */}
         <AppBar position="static" color="inherit" elevation={1}>
           <Toolbar sx={{ justifyContent: 'space-between', px: { xs: 2, md: 4 }, py: { xs: 1, md: 2 } }}>
-            <Box component="img" src="src/assets/logo.png" alt="AlquilApp Car" sx={{ height: { xs: 100, md: 120 } }} />
+            <Box component="img" src="src/assets/logo.png" alt="AlquilApp Car" sx={{ height: { xs: 150, md: 150 } }} />
             <Box
             sx={{
               display: 'flex',
@@ -277,76 +290,77 @@ useEffect(() => {
           >
             {!logueado ? (
               <Button
+                variant="contained"
+                color="secondary"
+                component={RouterLink}
+                to="/login"
+                sx={{
+                  px: 3,
+                  py: 1.5,
+                  fontWeight: 'bold',
+                  width: '140px',
+                  whiteSpace: 'nowrap',      
+                  overflow: 'hidden',          
+                }}
+              >
+                Iniciar sesión
+              </Button>
+            ) : (
+              <>
+                <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1, mb: 1 }}>
+                  <Button
                     variant="contained"
                     color="secondary"
-                    component={RouterLink}
-                    to="/login"
                     sx={{
                       px: 3,
                       py: 1.5,
                       fontWeight: 'bold',
                       width: '140px',
-                      whiteSpace: 'nowrap',      
-                      overflow: 'hidden',          
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
                     }}
+                    component={RouterLink}
+                    to="/verreservas"
                   >
-                    Iniciar sesión
+                    Ver reservas
                   </Button>
-
-            ) : (
-              <>
-              <Button
-                variant="contained"
-                color="secondary"
-                sx={{
+                  <Button
+                    variant="contained"
+                    color="secondary"
+                    sx={{
                       px: 3,
                       py: 1.5,
                       fontWeight: 'bold',
                       width: '140px',
-                      whiteSpace: 'nowrap',      
-                      overflow: 'hidden',          
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
                     }}
-                component={RouterLink}
-                to="/profile"
-              >
-                Ver perfil
-              </Button>
-               <Button
-                variant="contained"
-                color="secondary"
-                sx={{
-                      px: 3,
-                      py: 1.5,
-                      fontWeight: 'bold',
-                      width: '140px',
-                      whiteSpace: 'nowrap',      
-                      overflow: 'hidden',          
-                    }}
-                component={RouterLink}
-                to="/verreservas"
-              >
-                Ver reservas
-              </Button>
-              <Button
-                variant="outlined"
-                color="secondary"
-                sx={{
-                      px: 3,
-                      py: 1.5,
-                      fontWeight: 'bold',
-                      width: '140px',
-                      whiteSpace: 'nowrap',      
-                      overflow: 'hidden',          
-                    }}
-                onClick={() => {
-                  localStorage.removeItem('token');
-                  localStorage.removeItem('usuario_id');
-                  setLogueado(false);
-                  navigate('/logout'); // Redirige al home u otra página después del logout
-                }}
-              >
-                Cerrar sesión
-              </Button>
+                    component={RouterLink}
+                    to="/profile"
+                  >
+                    Ver perfil
+                  </Button>
+                </Box>
+                <Button
+                  variant="outlined"
+                  color="secondary"
+                  sx={{
+                    px: 3,
+                    py: 1.5,
+                    fontWeight: 'bold',
+                    width: '140px',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                  }}
+                  onClick={() => {
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('usuario_id');
+                    setLogueado(false);
+                    navigate('/logout');
+                  }}
+                >
+                  Cerrar sesión
+                </Button>
               </>
             )}
           </Box>
@@ -388,7 +402,7 @@ useEffect(() => {
                     <MenuItem value="">Seleccione sucursal</MenuItem>
                     {/* Renderiza las sucursales obtenidas de la API */}
                     {sucursalesData.map((sucursalItem) => (
-                      <MenuItem key={sucursalItem.id} value={sucursalItem.nombre}>
+                      <MenuItem key={sucursalItem.id} value={sucursalItem.id}>
                         {sucursalItem.nombre} - {sucursalItem.localidad}
                       </MenuItem>
                     ))}
@@ -406,6 +420,7 @@ useEffect(() => {
                   value={fechaRetiro}
                   onChange={(newValue) => setFechaRetiro(newValue)}
                   format="DD/MM/YYYY"
+                  minDate={minDateForRetiro} // Establece la fecha mínima para hoy
                   slotProps={{ textField: { fullWidth: true, variant: 'outlined' } }}
                 />
               </Box>
@@ -420,6 +435,7 @@ useEffect(() => {
                   value={fechaDevolucion}
                   onChange={(newValue) => setFechaDevolucion(newValue)}
                   format="DD/MM/YYYY"
+                  minDate={minDateForDevolucion} // Establece la fecha mínima según la fecha de retiro
                   slotProps={{ textField: { fullWidth: true, variant: 'outlined' } }}
                 />
               </Box>
@@ -516,7 +532,7 @@ useEffect(() => {
               )}
               {!loadingSucursales && !errorSucursales && sucursalesData.length > 0 ? (
                 <Slider {...settings}>
-                  {sucursalesData.map((sucursalItem: Sucursal) => ( // Cambia 'suc' por 'sucursalItem' y 'idx' por 'sucursalItem.id'
+                  {sucursalesData.map((sucursalItem: Sucursal) => (
                     <Box key={sucursalItem.id} sx={{ p: 1 }}>
                       <Paper
                         elevation={1}
@@ -533,7 +549,14 @@ useEffect(() => {
                           flexDirection: 'column',
                           alignItems: 'center',
                           justifyContent: 'center',
+                          cursor: 'pointer',
+                          transition: 'box-shadow 0.2s',
+                          '&:hover': {
+                            boxShadow: 6,
+                            bgcolor: 'secondary.dark',
+                          },
                         }}
+                        onClick={() => navigate(`/vehiculos?sucursal=${sucursalItem.id}`)}
                       >
                         <Typography variant="h6">{sucursalItem.nombre}</Typography>
                         <Typography variant="body2">{sucursalItem.localidad}</Typography>
@@ -593,99 +616,31 @@ useEffect(() => {
           <Typography variant="h3" sx={{ fontWeight: 'bold', color: 'white', mb: { xs: 1, md: 1 } }}>
             Contacto
           </Typography>
-
-          {/* Título "Envíanos tu consulta" */}
-          <Typography variant="h6" align="left" sx={{
-            mb: { xs: 2, md: 1 },
-            fontWeight: 'bold',
-            color: 'white',
-          }}>
-            Envíanos tu consulta
+          <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'white', mb: 2 }}>
+            ¿Tenés dudas? ¡Contactanos!
           </Typography>
-
-          {/* Formulario de consulta (TextField y Button) */}
-          <Box sx={{
-            color: 'white',
-            display: 'flex',
-            flexDirection: { xs: 'column', md: 'row' },
-            gap: 2,
-            mt: 0,
-            mb: { xs: 2, md: 1 },
-            width: '100%',
-            maxWidth: { xs: '100%', md: '700px' }
-          }}>
-           <TextField
-            fullWidth
-            placeholder="Escribí tu mensaje"
-            variant="outlined"
-            multiline
-            rows={1} // ✅ Solo una vez
-            InputProps={{
-              sx: {
-                bgcolor: 'white',
-                color: '#000', // Texto ingresado
-                borderRadius: 2,
-                '& .MuiInputBase-inputMultiline::placeholder': {
-                  color: '#999',
-                  opacity: 1,
-                },
-              },
-            }}
-            InputLabelProps={{ shrink: false }}
-            sx={{
-              '& .MuiOutlinedInput-root': {
-                borderRadius: 2,
-                '& fieldset': {
-                  borderColor: 'white',
-                },
-                '&:hover fieldset': {
-                  borderColor: 'white',
-                },
-                '&.Mui-focused fieldset': {
-                  borderColor: 'white',
-                },
-              },
-            }}
-          />
-            <Button
-              variant="contained"
-              color="secondary"            // mantiene el esquema “secondary” para que herede box-shadow y padding
-              sx={{
-                px: { xs: 2, md: 4 },
-                py: { xs: 1.5, md: 2 },
-                fontWeight: 'bold',
-                minWidth: { xs: 'auto', md: 150 },
-
-                /* ✅ personalización de colores */
-                bgcolor: 'white',           // fondo blanco
-                color: 'secondary.main',    // texto violeta tomado del tema
-                boxShadow: 'none',          // (opcional) quita sombra si preferís un look plano
-
-                /* Hover y activo para conservar el contraste */
-                '&:hover': {
-                  bgcolor: '#f5f5f5',       // un blanco grisáceo al pasar el mouse
-                  color: 'secondary.dark',
-                  boxShadow: 'none',
-                },
-                '&:active': {
-                  bgcolor: '#ebebeb',
-                },
-              }}
-            >
-              Enviar
-            </Button>
-          </Box>
 
           {/* Info */}
-          <Typography variant="body1" sx={{ color: 'white', mb: 0.5 }}>
-            AlquilAppCar@gmail.com
-          </Typography>
-          <Typography variant="body1" sx={{ color: 'white', mb: 0.5 }}>
-            Alquilappcar.ok
-          </Typography>
-          <Typography variant="body1" sx={{ color: 'white' }}>
-            +54 9 1122334455
-          </Typography>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <EmailIcon sx={{ color: 'white' }} />
+              <Typography variant="body1" sx={{ color: 'white' }}>
+                AlquilAppCar@gmail.com
+              </Typography>
+            </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <InstagramIcon sx={{ color: 'white' }} />
+              <Typography variant="body1" sx={{ color: 'white' }}>
+                @Alquilappcar.ok
+              </Typography>
+            </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <PhoneIcon sx={{ color: 'white' }} />
+              <Typography variant="body1" sx={{ color: 'white' }}>
+                +54 9 1122334455
+              </Typography>
+            </Box>
+          </Box>
         </Box>
       </Box>
     </LocalizationProvider>

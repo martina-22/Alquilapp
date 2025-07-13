@@ -7,6 +7,10 @@ import {
   Button,
   Typography,
 } from '@mui/material';
+import InputAdornment from '@mui/material/InputAdornment';
+import IconButton from '@mui/material/IconButton';
+import Visibility from '@mui/icons-material/Visibility';
+import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 export default function LoginForm() {
@@ -16,7 +20,7 @@ export default function LoginForm() {
   const [mostrar2fa, setMostrar2fa] = useState(false);
   const [mensaje, setMensaje] = useState('');
   const [esError, setEsError] = useState(false);
-
+  const [mostrarPassword, setMostrarPassword] = useState(false);
   const [errores, setErrores] = useState<{
     email?: string;
     password?: string;
@@ -71,12 +75,15 @@ export default function LoginForm() {
       localStorage.setItem('usuario_id', data.usuario_id);
       localStorage.setItem('rol', data.rol);
 
-      // 🔁 Redirigir según rol
-      if (data.rol === 'admin') {
-        navigate('/verflota');
-      } else {
-        navigate('/');
-      }
+    if (Number(data.rol) === 1) {
+      navigate('/HomeAdmin');
+    } else if (Number(data.rol) === 2) {
+      navigate('/HomeEmpleado');
+    } else {
+      navigate('/');
+    }
+
+
     }
   } catch (error) {
     setMensaje('Error de conexión con el servidor');
@@ -113,7 +120,7 @@ export default function LoginForm() {
     localStorage.setItem('rol', data.rol);
 
     if (data.rol === 'admin') {
-      navigate('/ver-flota');
+      navigate('/HomeAdmin');
     } else {
       navigate('/');
     }
@@ -162,6 +169,19 @@ export default function LoginForm() {
               type="password"
               error={Boolean(errores.password)}
               helperText={errores.password}
+               InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      aria-label="toggle password visibility"
+                      onClick={() => setMostrarPassword((show) => !show)}
+                      edge="end"
+                    >
+                      {mostrarPassword ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
             />
 
             {mostrar2fa && (
@@ -198,6 +218,20 @@ export default function LoginForm() {
               onClick={() => navigate('/registro')}
             >
               ¿No tenés cuenta? Registrate
+            </Button>
+            <Button
+              variant="text"
+              color="secondary"
+              onClick={() => navigate('/forgot-password')}
+            >
+              ¿Olvidaste tu contraseña?
+            </Button>
+            <Button
+              variant="text"
+              color="secondary"
+              onClick={() => navigate('/recuperarCuenta')}
+            >
+              Recuperar cuenta
             </Button>
           </Box>
         </CardContent>

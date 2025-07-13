@@ -1,4 +1,5 @@
 from extensions import db
+from datetime import datetime
 class Usuario(db.Model):
     __tablename__ = 'usuario'
 
@@ -12,7 +13,25 @@ class Usuario(db.Model):
     contrasena = db.Column(db.String(100), nullable=False)
     es_admin = db.Column(db.Boolean, default=False)
     es_empleado = db.Column(db.Boolean, default=False)
-
+    fecha_registro = db.Column(db.DateTime, default=datetime.now)
+    activo = db.Column(db.Boolean, default=True, nullable=False)
+    rol = db.Column(db.Integer, nullable=False, default=3)
+    
     reservas = db.relationship("Reserva", back_populates="usuario")
     administrador = db.relationship('Administrador', back_populates='usuario', uselist=False)
     empleado = db.relationship("Empleado", back_populates="usuario", uselist=False)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "nombre": self.nombre,
+            "apellido": self.apellido,
+            "dni": self.dni,
+            "fecha_nacimiento": self.fecha_nacimiento.isoformat() if self.fecha_nacimiento else None,
+            "telefono": self.telefono,
+            "email": self.email,
+            "es_admin": self.es_admin,
+            "es_empleado": self.es_empleado,
+            "fecha_registro": self.fecha_registro.isoformat() if self.fecha_registro else None
+        }
+

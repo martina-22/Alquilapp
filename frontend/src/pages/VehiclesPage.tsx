@@ -1,7 +1,6 @@
 // src/pages/VehiclesPage.tsx
 import React, { useState, useEffect } from 'react';
-import { Link as RouterLink } from 'react-router-dom';
-
+import { Link as RouterLink, useLocation } from 'react-router-dom';
 import {
   Container,
   Typography,
@@ -12,10 +11,14 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from '@mui/material';
+import type { SelectChangeEvent } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import CategoryFilter from '../pages/CategoryFilter';
-import { useLocation } from 'react-router-dom';
+import CategoryFilter from './CategoryFilter';
 
 interface PoliticaCancelacionDetails {
   id: number;
@@ -23,7 +26,11 @@ interface PoliticaCancelacionDetails {
   penalizacion_dias: number;
   porcentaje_penalizacion: number;
 }
-
+interface Sucursal {
+  id: number;
+  nombre: string;
+  localidad: string;
+}
 interface Vehicle {
   id: number;
   patente: string;
@@ -39,6 +46,13 @@ interface Vehicle {
   politica_cancelacion_details: PoliticaCancelacionDetails | null;
 }
 
+interface PoliticaCancelacionDetails {
+  id: number;
+  descripcion: string;
+  penalizacion_dias: number;
+  porcentaje_penalizacion: number;
+}
+
 function VehiclesPage() {
   const location = useLocation();
   const params = new URLSearchParams(location.search);
@@ -47,59 +61,65 @@ function VehiclesPage() {
   const fechaFin = params.get('fecha_fin');
   const horaRetiro = params.get('hora_retiro');
   const horaDevolucion = params.get('hora_devolucion');
-  const sucursal = params.get('sucursal'); // si lo querés usar
+  const sucursalFromUrl = params.get('sucursal') || '';
 
-  const getInitialCategory = () => {
-    const params = new URLSearchParams(location.search);
-    return params.get('categoria');
-  };
+  const [sucursalesData, setSucursalesData] = useState<Sucursal[]>([]);
+  const [loadingSucursales, setLoadingSucursales] = useState(true);
+  const [errorSucursales, setErrorSucursales] = useState<string | null>(null);
+  const [sucursalSeleccionada, setSucursalSeleccionada] = useState(sucursalFromUrl);
 
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(getInitialCategory());
+
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(
+    params.get('categoria')
+  );
 
   const availableCategories: string[] = [
-    "Chico",
-    "Mediano",
-    "SUV",
-    "Deportivo",
-    "Van",
-    "Apto discapacitados",
+    'Chico',
+    'Mediano',
+    'SUV',
+    'Deportivo',
+    'Van',
+    'Apto discapacitados',
   ];
 
   useEffect(() => {
-    const fetchVehicles = async () => {
-      setLoading(true);
-      setError(null);
+    const fetchSucursales = async () => {
       try {
-        let url = 'http://localhost:5000/vehiculos';
-
-        if (selectedCategory) {
-          url = `http://localhost:5000/vehiculos?categoria=${encodeURIComponent(selectedCategory)}`;
-        }
-
-        const res = await fetch(url, {
-          // headers: { /* ... */ }
-        });
-
-        if (!res.ok) {
-          const errorData = await res.json();
-          throw new Error(errorData.message || 'No se pudieron cargar los vehículos.');
-        }
-
-        const data = await res.json();
-        setVehicles(data);
-      } catch (err: any) {
-        console.error("Error al cargar vehículos:", err);
-        setError(err.message || 'Hubo un error al cargar los vehículos.');
+        const response = await fetch('http://localhost:5000/sucursales/all');
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        const data: Sucursal[] = await response.json();
+        setSucursalesData(data);
+      } catch (error: any) {
+        console.error('Error al cargar sucursales:', error);
+        setErrorSucursales(`No se pudieron cargar las sucursales: ${error.message}`);
       } finally {
-        setLoading(false);
+        setLoadingSucursales(false);
       }
     };
+    fetchSucursales();
+  }, []);
 
-    fetchVehicles();
-  }, [selectedCategory, location.search]);
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    setSucursalSeleccionada(params.get('sucursal') || '');
+  }, [location.search]);
+
+  const handleSucursalChange = (event: SelectChangeEvent<string>) => {
+  const value = event.target.value;
+  setSucursalSeleccionada(value);
+
+  const params = new URLSearchParams(location.search);
+  if (value) {
+    params.set('sucursal', value);
+  } else {
+    params.delete('sucursal');
+  }
+  window.history.replaceState({}, '', `${window.location.pathname}?${params.toString()}`);
+};
+
 
   const handleCategorySelect = (category: string | null) => {
     setSelectedCategory(category);
@@ -113,6 +133,42 @@ function VehiclesPage() {
     window.history.replaceState({}, '', `${window.location.pathname}?${params.toString()}`);
   };
 
+  useEffect(() => {
+    const fetchVehicles = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        let url = 'http://localhost:5000/vehiculos';
+        const paramsArr = [];
+        if (selectedCategory) paramsArr.push(`categoria=${encodeURIComponent(selectedCategory)}`);
+        if (sucursalSeleccionada) paramsArr.push(`sucursal=${encodeURIComponent(sucursalSeleccionada)}`);
+        if (paramsArr.length > 0) url += `?${paramsArr.join('&')}`;
+
+        const res = await fetch(url);
+        if (!res.ok) {
+          const errorData = await res.json();
+          throw new Error(errorData.message || 'No se pudieron cargar los vehículos.');
+        }
+
+        const data = await res.json();
+        setVehicles(data);
+      } catch (err: any) {
+        console.error('Error al cargar vehículos:', err);
+        setError(err.message || 'Hubo un error al cargar los vehículos.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchVehicles();
+  }, [selectedCategory, sucursalSeleccionada, location.search]);
+
+  const sucursalNameMap = React.useMemo(() => {
+    const map = new Map<number, string>();
+    sucursalesData.forEach((s) => map.set(s.id, `${s.nombre} (${s.localidad})`));
+    return map;
+  }, [sucursalesData]);
+
   if (loading) {
     return (
       <Container maxWidth="md" sx={{ mt: 4, mb: 4, textAlign: 'center' }}>
@@ -122,10 +178,11 @@ function VehiclesPage() {
     );
   }
 
-  if (error) {
+  if (error || errorSucursales) {
     return (
       <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
-        <Alert severity="error">{error}</Alert>
+        {error && <Alert severity="error">{error}</Alert>}
+        {errorSucursales && <Alert severity="error">{errorSucursales}</Alert>}
       </Container>
     );
   }
@@ -142,6 +199,26 @@ function VehiclesPage() {
         onSelectCategory={handleCategorySelect}
       />
 
+      <Box sx={{ mt: 3, mb: 4 }}>
+        <FormControl sx={{ minWidth: 1018, maxWidth: '100%' }} variant="outlined">
+          <InputLabel id="sucursal-label">Sucursal</InputLabel>
+          <Select
+            labelId="sucursal-label"
+            value={sucursalSeleccionada}
+            label="Sucursal"
+            onChange={handleSucursalChange}
+            variant="outlined"
+          >
+            <MenuItem value="">Seleccione sucursal</MenuItem>
+            {sucursalesData.map((sucursalItem) => (
+              <MenuItem key={sucursalItem.id} value={sucursalItem.id}>
+                {sucursalItem.nombre} - {sucursalItem.localidad}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+      </Box>
+
       <Box sx={{ mt: 4 }}>
         {vehicles.length === 0 ? (
           <Typography variant="h6" align="center" color="text.secondary">
@@ -150,20 +227,27 @@ function VehiclesPage() {
         ) : (
           <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 3 }}>
             {vehicles.map((vehicle) => (
-              <Box key={vehicle.id} sx={{ p: 2, border: '1px solid #eee', borderRadius: '8px', boxShadow: 1 }}>
-                <Typography variant="h6">{vehicle.marca} {vehicle.modelo}</Typography>
+              <Box
+                key={vehicle.id}
+                sx={{ p: 2, border: '1px solid #eee', borderRadius: '8px', boxShadow: 1 }}
+              >
+                <Typography variant="h6">
+                  {vehicle.marca} {vehicle.modelo}
+                </Typography>
                 <Typography variant="body2" color="text.secondary">
                   Categoría: {vehicle.categoria}
                 </Typography>
                 <Typography variant="body2">Año: {vehicle.anio}</Typography>
                 <Typography variant="body2">Capacidad: {vehicle.capacidad} pasajeros</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Sucursal: {sucursalNameMap.get(vehicle.sucursal_id) || 'Desconocida'}
+                </Typography>
                 <Typography variant="h6" color="secondary" sx={{ mt: 2 }}>
                   ${vehicle.precio_dia} / día
                 </Typography>
 
-                {/* Sección de la Política de Cancelación Desplegable */}
                 {vehicle.politica_cancelacion_details ? (
-                  <Accordion sx={{ mt: 2, boxShadow: 'none', '&:before': { display: 'none' }, borderRadius: 'px' }}>
+                  <Accordion sx={{ mt: 2, boxShadow: 'none' }}>
                     <AccordionSummary
                       expandIcon={<ExpandMoreIcon />}
                       aria-controls={`panel-politica-${vehicle.id}-content`}
@@ -191,7 +275,8 @@ function VehiclesPage() {
                     Política de cancelación no disponible.
                   </Typography>
                 )}
-               <Button
+
+                <Button
                   variant="contained"
                   fullWidth
                   color="secondary"

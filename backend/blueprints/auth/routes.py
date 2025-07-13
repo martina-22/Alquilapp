@@ -4,6 +4,7 @@ from models.usuario import Usuario
 from flask_mail import Message
 from extensions import mail, db
 from flask_cors import CORS
+from models.empleado import Empleado
 from flask_jwt_extended import (
     create_access_token,
     jwt_required,
@@ -90,10 +91,17 @@ def login():
 
     # ✅ Usuario común → generar token correctamente
     access_token = create_access_token(identity=str(user.id))
+    if user.es_admin:
+            rol = 1
+    elif user.es_empleado:
+            rol = 2
+    else:
+            rol = 3
     
     return jsonify({
         'message': 'Inicio de sesión exitoso',
         'access_token': access_token,
+        'rol': rol,
         'require_2fa': False
     }), 200
 
@@ -172,11 +180,14 @@ def profile():
 
     print("✅ Usuario encontrado:", user.nombre, user.apellido)
     return jsonify({
+        "id": user.id, 
         "nombre": user.nombre,
         "apellido": user.apellido,
+        "rol": user.rol, 
         "email": user.email,
         "dni": user.dni,
         "telefono": user.telefono,
+        "activo": user.activo,
         "fecha_nacimiento": user.fecha_nacimiento.isoformat() if user.fecha_nacimiento else None
     })
 
@@ -210,3 +221,152 @@ def update_profile():
 
     return jsonify({"message": "Perfil actualizado correctamente"})
 
+# -------------------- REGISTRO EMPLEADO--------------------
+@auth_bp.route('/register-empleado', methods=['POST'])
+@jwt_required()
+def register_empleado():
+    data = request.get_json()
+    user_id = get_jwt_identity()
+    current_user = Usuario.query.get(int(user_id))
+
+    if not current_user or not current_user.es_admin:
+        return jsonify({'message': 'Solo un administrador puede crear empleados'}), 403
+
+    usuario_existente = Usuario.query.filter_by(email=data['email']).first()
+
+    if usuario_existente:
+        if usuario_existente.activo:
+            return jsonify({'message': 'El correo ya está registrado en un usuario activo'}), 400
+        else:
+            return jsonify({
+                'message': f"El correo '{usuario_existente.email}' ya existe pero el usuario está eliminado. "
+                        "Puedes recuperarlo desde la sección de empleados inactivos."
+            }), 400
+
+    try:
+        fecha_nac = datetime.strptime(data['fecha_nacimiento'], '%Y-%m-%d').date()
+    except ValueError:
+        return jsonify({'message': 'Formato de fecha inválido, debe ser YYYY-MM-DD'}), 400
+
+    if calcular_edad(fecha_nac) < 18:
+        return jsonify({'message': 'El empleado debe ser mayor de edad'}), 400
+
+    if len(data['contrasena']) < 8:
+        return jsonify({'message': 'La contraseña debe tener al menos 8 caracteres'}), 400
+
+    hashed_password = bcrypt.hashpw(data['contrasena'].encode('utf-8'), bcrypt.gensalt())
+
+    nuevo_usuario = Usuario(
+        nombre=data['nombre'],
+        apellido=data['apellido'],
+        dni=data['dni'],
+        fecha_nacimiento=fecha_nac,
+        telefono=data['telefono'],
+        email=data['email'],
+        contrasena=hashed_password.decode('utf-8'),
+        es_admin=False,
+        es_empleado=True,
+        activo=True
+    )
+
+    db.session.add(nuevo_usuario)
+    db.session.flush()
+
+    sucursal_id = data.get('sucursal_id')
+    if not sucursal_id:
+        return jsonify({'message': 'Falta el ID de sucursal para el empleado'}), 400
+
+    cantidad_empleados = Empleado.query.count() + 1
+    numero_empleado = f"EMP{cantidad_empleados:04d}"
+
+    nuevo_empleado = Empleado(
+        id=nuevo_usuario.id,
+        numero_empleado=numero_empleado,
+        sucursal_id=sucursal_id
+    )
+    db.session.add(nuevo_empleado)
+    db.session.commit()
+
+    return jsonify({'message': 'Empleado registrado con éxito'}), 201
+
+@auth_bp.route('/recuperar-cuenta', methods=['POST', 'OPTIONS'])
+def recuperar_cuenta():
+    if request.method == 'OPTIONS':
+        response = jsonify({'message': 'Preflight OK'})
+        response.headers.add('Access-Control-Allow-Origin', 'http://localhost:5173')
+        response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+        response.headers.add('Access-Control-Allow-Methods', 'POST,OPTIONS')
+        response.headers.add('Access-Control-Allow-Credentials', 'true')
+        return response, 200
+
+    data = request.get_json()
+    email = data.get('email')
+    usuario = Usuario.query.filter_by(email=email).first()
+
+    if not usuario:
+        return jsonify({'message': 'Usuario no encontrado'}), 404
+
+    if usuario.activo:
+        return jsonify({'message': 'La cuenta ya está activa'}), 400
+
+    if usuario.rol != 3:
+        return jsonify({'message': 'Solo los clientes pueden recuperar su cuenta'}), 403
+
+    # Generar y guardar código
+    codigo = str(random.randint(100000, 999999))
+    codigos_2fa[email] = codigo
+
+    msg = Message(
+        subject="Recuperación de cuenta - Código de verificación",
+        recipients=["martigarcia.1407@gmail.com"],
+        body=f"Tu código para recuperar la cuenta es: {codigo}"
+    )
+    mail.send(msg)
+
+    response = jsonify({'message': 'Se ha enviado un código de verificación al correo'})
+    response.headers.add('Access-Control-Allow-Origin', 'http://localhost:5173')
+    response.headers.add('Access-Control-Allow-Credentials', 'true')
+    return response, 200
+
+@auth_bp.route('/verificar-codigo-recuperacion', methods=['POST', 'OPTIONS'])
+def verificar_codigo_recuperacion():
+    if request.method == 'OPTIONS':
+        response = jsonify({'message': 'Preflight OK'})
+        response.headers.add('Access-Control-Allow-Origin', 'http://localhost:5173')
+        response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+        response.headers.add('Access-Control-Allow-Methods', 'POST,OPTIONS')
+        response.headers.add('Access-Control-Allow-Credentials', 'true')
+        return response, 200
+
+    data = request.get_json()
+    email = data.get('email')
+    codigo_ingresado = data.get('codigo')
+
+    if email not in codigos_2fa:
+        return jsonify({'message': 'No se ha solicitado recuperación para este correo'}), 400
+
+    if codigos_2fa[email] != codigo_ingresado:
+        return jsonify({'message': 'Código incorrecto'}), 401
+
+    usuario = Usuario.query.filter_by(email=email).first()
+    if not usuario:
+        return jsonify({'message': 'Usuario no encontrado'}), 404
+
+    if usuario.rol != 3:
+        return jsonify({'message': 'Solo los clientes pueden recuperar su cuenta'}), 403
+
+    usuario.activo = True
+    db.session.commit()
+    del codigos_2fa[email]
+
+    access_token = create_access_token(identity=str(usuario.id))
+
+    response = jsonify({
+        'message': 'Cuenta reactivada con éxito',
+        'access_token': access_token,
+        'nombre': usuario.nombre,
+        'apellido': usuario.apellido
+    })
+    response.headers.add('Access-Control-Allow-Origin', 'http://localhost:5173')
+    response.headers.add('Access-Control-Allow-Credentials', 'true')
+    return response, 200

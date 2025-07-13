@@ -10,9 +10,10 @@ from models.reserva import Reserva
 from models.usuario import Usuario
 from models.vehiculo import Vehiculo
 from models.sucursal import Sucursal
+from models.reserva_extra import ReservaExtra
 from models.politica_cancelacion import PoliticaCancelacion
-from flask_cors import CORS
-
+from flask_cors import CORS, cross_origin
+import traceback
 from services.mailer import send_email_notification
 reservas_bp = Blueprint("reservas", __name__)
 CORS(reservas_bp, supports_credentials=True, origins=["http://localhost:5173"])
@@ -23,6 +24,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 
 @reservas_bp.route('/ver', methods=['GET', 'OPTIONS'])
 def ver_reservas():
+    
     if request.method == 'OPTIONS':
         response = make_response()
         response.headers.add("Access-Control-Allow-Origin", "http://localhost:5173")
@@ -33,12 +35,15 @@ def ver_reservas():
 
     return ver_reservas_protegido()
 
-
+def actualizar_estado_si_corresponde(reserva):
+    if reserva.fecha_fin < datetime.now() and reserva.estado != 'finalizada':
+        reserva.estado = 'finalizada'
+        db.session.commit()
+        
 @jwt_required()
 def ver_reservas_protegido():
     user_id = get_jwt_identity()
 
-    # 💡 Agregamos joinedload para traer el estado junto con la reserva
     reservas = (
         Reserva.query
         .options(joinedload(Reserva.estado))
@@ -50,6 +55,7 @@ def ver_reservas_protegido():
     response.headers.add("Access-Control-Allow-Origin", "http://localhost:5173")
     response.headers.add("Access-Control-Allow-Credentials", "true")
     return response
+
 
 
 @reservas_bp.route("/iniciar", methods=["POST", "OPTIONS"])
@@ -65,7 +71,6 @@ def iniciar_reserva_endpoint():
     try:
         data = request.get_json()
 
-        # ✅ Usamos el servicio que contiene la lógica de validación y estado
         reserva_creada = iniciar_reserva(data)
 
         response = jsonify(reserva_creada.to_dict())
@@ -133,6 +138,67 @@ def obtener_reservas_por_usuario(usuario_id):
         .filter_by(usuario_id=usuario_id)
         .all()
     )
+@reservas_bp.route('/todas', methods=['GET', 'OPTIONS'])
+def ver_todas_las_reservas():
+    if request.method == "OPTIONS":
+        response = make_response()
+        response.headers.add("Access-Control-Allow-Origin", "http://localhost:5173")
+        response.headers.add("Access-Control-Allow-Headers", "Content-Type,Authorization")
+        response.headers.add("Access-Control-Allow-Methods", "GET,OPTIONS")
+        response.headers.add("Access-Control-Allow-Credentials", "true")
+        return response, 200
+
+    return ver_todas_las_reservas_protegido()
+
+@jwt_required()
+def ver_todas_las_reservas_protegido():
+    reservas = (
+        Reserva.query
+        .options(joinedload(Reserva.usuario), joinedload(Reserva.vehiculo), joinedload(Reserva.estado))
+        .order_by(Reserva.estado_id.asc(), Reserva.fecha_inicio.desc())
+        .all()
+    )
+
+    resultado = [reserva.to_dict() for reserva in reservas]
+
+    response = jsonify(resultado)
+    response.headers.add("Access-Control-Allow-Origin", "http://localhost:5173")
+    response.headers.add("Access-Control-Allow-Credentials", "true")
+    return response, 200
+@reservas_bp.route('/filtrar', methods=['GET', 'OPTIONS'])
+def filtrar_reservas_por_estado():
+    if request.method == "OPTIONS":
+        response = make_response()
+        response.headers.add("Access-Control-Allow-Origin", "http://localhost:5173")
+        response.headers.add("Access-Control-Allow-Headers", "Content-Type,Authorization")
+        response.headers.add("Access-Control-Allow-Methods", "GET,OPTIONS")
+        response.headers.add("Access-Control-Allow-Credentials", "true")
+        return response, 200
+
+    return filtrar_reservas_por_estado_protegido()
+
+@jwt_required()
+def filtrar_reservas_por_estado_protegido():
+    estado_id = request.args.get("estado_id")
+
+    if not estado_id:
+        return jsonify({"error": "Debe proporcionar un estado_id en la query string"}), 400
+
+    reservas = (
+        Reserva.query
+        .options(joinedload(Reserva.usuario), joinedload(Reserva.vehiculo), joinedload(Reserva.estado))
+        .filter_by(estado_id=int(estado_id))
+        .order_by(Reserva.fecha_inicio.desc())
+        .all()
+    )
+
+    resultado = [reserva.to_dict() for reserva in reservas]
+
+    response = jsonify(resultado)
+    response.headers.add("Access-Control-Allow-Origin", "http://localhost:5173")
+    response.headers.add("Access-Control-Allow-Credentials", "true")
+    return response, 200
+
 
 @reservas_bp.route('/simular-pago/<int:reserva_id>', methods=['POST'])
 def simular_pago(reserva_id):
@@ -241,3 +307,257 @@ def simular_pago(reserva_id):
             return jsonify({"message": f"Reserva {reserva_id} marcada como pagada, pero falló el envío de la notificación por correo."}), 200
     else:
         return jsonify({"message": "La reserva ya está pagada o no está en estado pendiente de pago para esta simulación."}), 400
+    
+@reservas_bp.route("/vehiculos-reservados-por-fecha", methods=["GET"])
+@jwt_required()
+def vehiculos_reservados_por_fecha():
+    try:
+        desde_str = request.args.get("desde")
+        hasta_str = request.args.get("hasta")
+
+        if not desde_str or not hasta_str:
+            return jsonify({"error": "Faltan fechas"}), 400
+
+        # Convertir a datetime
+        desde = datetime.strptime(desde_str, "%Y-%m-%d")
+        hasta = datetime.strptime(hasta_str, "%Y-%m-%d")
+        hasta = hasta.replace(hour=23, minute=59, second=59)  # incluir todo el día
+
+        reservas = (
+            Reserva.query
+            .filter(Reserva.fecha_inicio >= desde, Reserva.fecha_inicio <= hasta)
+            .options(joinedload(Reserva.vehiculo), joinedload(Reserva.usuario))
+            .all()
+        )
+        return jsonify([r.to_dict_completo() for r in reservas]), 200
+
+    except ValueError:
+        return jsonify({"error": "Formato de fecha inválido. Usa YYYY-MM-DD"}), 400
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@reservas_bp.route("/reporte/reservas-por-dia", methods=["GET"])
+@jwt_required()
+def reservas_por_dia():
+    try:
+        desde_str = request.args.get("desde")
+        hasta_str = request.args.get("hasta")
+
+        desde = datetime.strptime(desde_str, "%Y-%m-%d")
+        hasta = datetime.strptime(hasta_str, "%Y-%m-%d")
+
+        resultados = (
+            db.session.query(
+                db.func.date(Reserva.fecha_inicio).label('fecha'),
+                db.func.count().label('cantidad')
+            )
+            .filter(Reserva.fecha_inicio >= desde, Reserva.fecha_inicio <= hasta)
+            .group_by(db.func.date(Reserva.fecha_inicio))
+            .order_by('fecha')
+            .all()
+        )
+
+        return jsonify([
+            {"dia": fecha.strftime("%A"), "cantidad": cantidad}
+            for fecha, cantidad in resultados
+        ])
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+@reservas_bp.route('/reporte/vehiculos-mas-reservados', methods=['GET'])
+@jwt_required()
+def vehiculos_mas_reservados():
+    try:
+        resultado = (
+            db.session.query(Vehiculo.modelo, db.func.count(Reserva.id).label('reservas'))
+            .join(Reserva)
+            .group_by(Vehiculo.modelo)
+            .order_by(db.desc('reservas'))
+            .limit(5)
+            .all()
+        )
+
+        return jsonify([{"modelo": r[0], "reservas": r[1]} for r in resultado])
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@reservas_bp.route('/reporte/vehiculos-menos-reservados', methods=['GET'])
+@jwt_required()
+def vehiculos_menos_reservados():
+    try:
+        resultado = (
+            db.session.query(Vehiculo.modelo, db.func.count(Reserva.id).label('reservas'))
+            .join(Reserva)
+            .group_by(Vehiculo.modelo)
+            .order_by('reservas')
+            .limit(5)
+            .all()
+        )
+
+        return jsonify([{"modelo": r[0], "reservas": r[1]} for r in resultado])
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
+@reservas_bp.route('/reporte/reservas-por-categoria', methods=['GET'])
+@jwt_required()
+def reservas_por_categoria():
+    try:
+        total = db.session.query(db.func.count(Reserva.id)).scalar()
+
+        resultado = (
+            db.session.query(Vehiculo.categoria, db.func.count(Reserva.id).label('cantidad'))
+            .join(Reserva)
+            .group_by(Vehiculo.categoria)
+            .all()
+        )
+
+        return jsonify([
+            {
+                "categoria": categoria,
+                "porcentaje": round((cantidad / total) * 100, 2)
+            }
+            for categoria, cantidad in resultado
+        ])
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@reservas_bp.route("/agregar-extra", methods=["POST"])
+@jwt_required()
+def agregar_extra_a_reserva():
+    data = request.get_json()
+    reserva_id = data.get("reserva_id")
+    extra_id = data.get("extra_id")
+
+    if not reserva_id or not extra_id:
+        return jsonify({"error": "Faltan datos"}), 400
+
+    reserva_extra_existente = db.session.query(ReservaExtra).filter_by(
+        reserva_id=reserva_id,
+        extra_id=extra_id
+    ).first()
+
+    if reserva_extra_existente:
+        return jsonify({"message": "Este extra ya está agregado a la reserva"}), 200
+
+    nueva_asociacion = ReservaExtra(reserva_id=reserva_id, extra_id=extra_id)
+    db.session.add(nueva_asociacion)
+    db.session.commit()
+
+    return jsonify({"message": "Extra agregado correctamente a la reserva"}), 200
+
+@reservas_bp.route("/marcar-devuelto/<int:reserva_id>", methods=["PUT"])
+@jwt_required()
+def marcar_vehiculo_como_devuelto(reserva_id):
+    reserva = Reserva.query.get(reserva_id)
+    if not reserva:
+        return jsonify({"error": "Reserva no encontrada"}), 404
+
+    if reserva.estado_id == 4:  # Suponiendo que 4 es "devuelto" o "finalizada"
+        return jsonify({"message": "Ya fue marcada como devuelta"}), 200
+
+    reserva.estado_id = 4  # Actualiza al estado correspondiente
+    db.session.commit()
+
+    return jsonify({"message": "Vehículo marcado como devuelto"}), 200
+
+@reservas_bp.route("/modificar-sucursal/<int:reserva_id>", methods=["PUT"])
+@jwt_required()
+def modificar_sucursal_reserva(reserva_id):
+    data = request.get_json()
+    nueva_sucursal_id = data.get("sucursal_id")
+
+    reserva = Reserva.query.get(reserva_id)
+    if not reserva:
+        return jsonify({"error": "Reserva no encontrada"}), 404
+
+    if not nueva_sucursal_id:
+        return jsonify({"error": "ID de nueva sucursal requerido"}), 400
+
+    reserva.vehiculo.sucursal_id = nueva_sucursal_id
+    db.session.commit()
+
+    return jsonify({"message": "Sucursal modificada correctamente"}), 200
+@reservas_bp.route('/activas', methods=['GET'])
+@jwt_required()
+@cross_origin(origins='http://localhost:5173', supports_credentials=True)
+def ver_reservas_activas():
+    reservas = (
+        Reserva.query
+        .filter(Reserva.estado_id == 2)
+        .options(
+            joinedload(Reserva.usuario),
+            joinedload(Reserva.vehiculo).joinedload(Vehiculo.sucursal),
+            joinedload(Reserva.estado)
+        )
+        .all()
+    )
+    return jsonify([r.to_dict_completo() for r in reservas])
+
+
+
+from datetime import datetime
+
+def iniciar_reserva(data):
+    try:
+        # Convertir fecha y hora a datetime
+        fecha_inicio_str = f"{data['fecha_inicio']} {data['hora_retiro']}"
+        fecha_fin_str = f"{data['fecha_fin']} {data['hora_devolucion']}"
+
+        fecha_inicio = datetime.strptime(fecha_inicio_str, "%Y-%m-%d %H:%M")
+        fecha_fin = datetime.strptime(fecha_fin_str, "%Y-%m-%d %H:%M")
+
+        reserva = Reserva(
+            usuario_id=data["usuario_id"],
+            vehiculo_id=data["vehiculo_id"],
+            fecha_inicio=fecha_inicio,
+            fecha_fin=fecha_fin,
+            hora_retiro=data["hora_retiro"],
+            hora_devolucion=data["hora_devolucion"],
+            pagada=data.get("pagada", False),
+            fecha_reserva=datetime.now().date()
+        )
+
+        db.session.add(reserva)
+        db.session.commit()
+
+        if data.get("extras"):
+            extra = ReservaExtra(reserva_id=reserva.id, descripcion=data["extras"])
+            db.session.add(extra)
+            db.session.commit()
+
+        return reserva
+    except Exception as e:
+        print("❌ Error en iniciar_reserva:", e)
+        raise
+
+@reservas_bp.route('/publicas', methods=['GET', 'OPTIONS'])
+def ver_reservas_publicas():
+    if request.method == "OPTIONS":
+        response = make_response()
+        response.headers.add("Access-Control-Allow-Origin", "http://localhost:5173")
+        response.headers.add("Access-Control-Allow-Headers", "Content-Type,Authorization")
+        response.headers.add("Access-Control-Allow-Methods", "GET,OPTIONS")
+        response.headers.add("Access-Control-Allow-Credentials", "true")
+        return response, 200
+
+    reservas = (
+        Reserva.query
+        .options(
+            joinedload(Reserva.usuario),
+            joinedload(Reserva.vehiculo),
+            joinedload(Reserva.estado),
+            joinedload(Reserva.extras_asociados)
+        )
+        .order_by(Reserva.fecha_inicio.desc())
+        .all()
+    )
+
+    resultado = [r.to_dict_completo() for r in reservas]
+
+    response = jsonify(resultado)
+    response.headers.add("Access-Control-Allow-Origin", "http://localhost:5173")
+    response.headers.add("Access-Control-Allow-Credentials", "true")
+    return response, 200

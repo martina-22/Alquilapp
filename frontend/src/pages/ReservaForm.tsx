@@ -208,7 +208,7 @@ export const ReservaForm = () => {
 
           <Typography sx={{ fontWeight: 500, color: "#6C3D8E" }}>Fecha de finalización</Typography>
           <Box display="flex" justifyContent="space-between" alignItems="center">
-          <Typography>{formatearFecha(reservaData.fecha_inicio)}</Typography>
+          <Typography>{formatearFecha(reservaData.fecha_fin)}</Typography>
           <Box display="flex" alignItems="center" gap={0.5}>
             <AccessTimeIcon sx={{ fontSize: 18, color: "#6C3D8E" }} />
             <Typography>{reservaData.hora_devolucion}</Typography>

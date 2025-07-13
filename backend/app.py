@@ -42,8 +42,10 @@ def create_app():
     from blueprints.usuario.routes import usuarios_bp
     from blueprints.pagos.routes import pagos_bp
     from blueprints.sucursal.routes import sucursales_bp
-    app.register_blueprint(sucursales_bp, url_prefix="/sucursales")
+    from blueprints.reporte.routes import reporte_bp
 
+    app.register_blueprint(reporte_bp, url_prefix="/reporte")
+    app.register_blueprint(sucursales_bp, url_prefix="/sucursales")
     app.register_blueprint(auth_bp, url_prefix="/auth")
     app.register_blueprint(vehiculos_bp, url_prefix="/vehiculos")
     app.register_blueprint(reservas_bp, url_prefix="/reservas")

@@ -12,3 +12,4 @@ class Sucursal(db.Model):
     vehiculos = db.relationship("Vehiculo", back_populates="sucursal")
     empleados = db.relationship("Empleado", back_populates="sucursal")
     administradores = db.relationship('Administrador', back_populates='sucursal', lazy=True)
+    activo = db.Column(db.Boolean, default=True)

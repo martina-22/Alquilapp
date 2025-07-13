@@ -1,27 +1,21 @@
 import { useEffect, useState } from 'react';
 import {
-  Box,
-  Typography,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-  Card,
-  CardContent,
-  Grid,
-  IconButton,
-  Menu,
-  MenuItem,
-  Button,
+  Box, Card, CardContent, Typography, Table, TableBody, TableCell, TableContainer,
+  TableHead, TableRow, Paper, IconButton, CircularProgress, Snackbar, Alert, Dialog,
+  DialogActions, DialogContent, DialogContentText, DialogTitle, Button
 } from '@mui/material';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import MoreVertIcon from '@mui/icons-material/MoreVert';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
 import { useNavigate } from 'react-router-dom';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 
-interface Vehiculo {
+const API_URL = 'http://localhost:5000';
+
+interface VehiculoPorSucursal {
   marca: string;
   modelo: string;
-  anio: number;
-  tipo: string;
+  anio: string | number;
+  categoria: string;
   matricula: string;
   localidad: string;
   localidad_nombre: string;
@@ -29,136 +23,265 @@ interface Vehiculo {
   politica_cancelacion: string;
   precio_por_dia: number;
   estado: string;
-  estado_nombre: string;
 }
 
-export default function VerFlotaCompleta() {
-  const [vehiculos, setVehiculos] = useState<Vehiculo[]>([]);
-  const [agrupado, setAgrupado] = useState<Record<string, Record<string, Vehiculo[]>>>({});
-  const [error, setError] = useState(false);
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const [vehiculoSeleccionado, setVehiculoSeleccionado] = useState<Vehiculo | null>(null);
+interface SucursalConVehiculos {
+  sucursal_id: number;
+  sucursal_nombre: string;
+  localidad_nombre: string;
+  vehiculos: VehiculoPorSucursal[];
+}
 
+export default function ListadoFlota() {
+  const [vehiculos, setVehiculos] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [mensaje, setMensaje] = useState('');
+  const [esError, setEsError] = useState(false);
+  const [openSnackbar, setOpenSnackbar] = useState(false);
+  const [vehiculoAEliminar, setVehiculoAEliminar] = useState<string | null>(null);
+  const [mostrandoFlotaPorSucursal, setMostrandoFlotaPorSucursal] = useState(false);
+  const [flotaPorSucursal, setFlotaPorSucursal] = useState<SucursalConVehiculos[]>([]);
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetch('http://localhost:5000/vehiculos/flota')
-      .then((res) => {
-        if (!res.ok) throw new Error('Error en la respuesta del servidor');
-        return res.json();
+    fetch(`${API_URL}/vehiculos/flota`)
+      .then(res => res.json())
+      .then(data => {
+        setVehiculos(data.vehiculos);
+        setLoading(false);
       })
-      .then((data) => {
-        if (data.vehiculos) {
-          setVehiculos(data.vehiculos);
-          agruparPorMarcaYModelo(data.vehiculos);
-        } else {
-          setError(true);
-        }
-      })
-      .catch(() => setError(true));
+      .catch(() => {
+        setMensaje('Error al cargar la flota');
+        setEsError(true);
+        setOpenSnackbar(true);
+        setLoading(false);
+      });
   }, []);
 
-  const agruparPorMarcaYModelo = (vehiculos: Vehiculo[]) => {
-    const agrupado: Record<string, Record<string, Vehiculo[]>> = {};
-    vehiculos.forEach((v) => {
-      if (!agrupado[v.marca]) agrupado[v.marca] = {};
-      if (!agrupado[v.marca][v.modelo]) agrupado[v.marca][v.modelo] = [];
-      agrupado[v.marca][v.modelo].push(v);
-    });
-    setAgrupado(agrupado);
+  const verFlotaPorSucursal = async () => {
+    try {
+      const res = await fetch(`${API_URL}/vehiculos/flota-por-sucursal`);
+      const data = await res.json();
+      setFlotaPorSucursal(data.sucursales);
+      setMostrandoFlotaPorSucursal(true);
+    } catch (error) {
+      console.error(error);
+      setMensaje('Error al obtener la flota agrupada por sucursal');
+      setEsError(true);
+      setOpenSnackbar(true);
+    }
   };
 
-  const handleMenuClick = (event: React.MouseEvent<HTMLButtonElement>) => {
-    setAnchorEl(event.currentTarget);
+  const handleModificar = (patente: string) => {
+    navigate('/ModificarVehiculo', { state: { patente } });
   };
 
-  const handleClose = () => {
-    setAnchorEl(null);
-    setVehiculoSeleccionado(null);
+  const handleEliminar = (patente: string) => {
+    setVehiculoAEliminar(patente);
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('usuario_id');
-    navigate('/login');
+  const confirmarEliminacion = async () => {
+    if (!vehiculoAEliminar) return;
+
+    try {
+      const res = await fetch(`${API_URL}/vehiculos/eliminar/${vehiculoAEliminar}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        setVehiculos(prev => prev.filter(v => v.matricula !== vehiculoAEliminar));
+        setMensaje(data.message || `Vehículo ${vehiculoAEliminar} eliminado correctamente`);
+        setEsError(false);
+      } else {
+        setMensaje(data.message || 'Error al eliminar el vehículo');
+        setEsError(true);
+      }
+    } catch {
+      setMensaje('Error de conexión con el servidor');
+      setEsError(true);
+    } finally {
+      setOpenSnackbar(true);
+      setVehiculoAEliminar(null);
+    }
   };
 
   return (
-    <Box bgcolor="#f0f2f5" minHeight="100vh" p={4} position="relative">
-      {/* Botones a la izquierda */}
-      <Box position="absolute" top={16} left={16} display="flex" gap={2}>
-        <Button variant="outlined" color="secondary" onClick={() => navigate('/profile')}>
-          Ver perfil
-        </Button>
-        <Button variant="outlined" color="secondary" onClick={handleLogout}>
-          Cerrar sesión
-        </Button>
-      </Box>
+    <Box display="flex" justifyContent="center" padding={4} bgcolor="#f4f4f4" minHeight="100vh">
+      <Card sx={{ width: '100%', maxWidth: 1200, borderRadius: 4, boxShadow: 4 }}>
+        <CardContent>
+         <Box position="relative" mb={2}>
+          <IconButton
+            onClick={() => navigate('/GestionFlota')}
+            color="secondary"
+            sx={{ position: 'absolute', left: 0, top: '50%', transform: 'translateY(-50%)' }}
+          >
+            <ArrowBackIcon />
+          </IconButton>
+          <Typography variant="h4" fontWeight="bold" color="secondary" align="center">
+            Flota de Vehículos
+          </Typography>
+        </Box>
 
-      {/* Botón desplegable en la esquina superior derecha */}
-      <Box position="absolute" top={16} right={16}>
-        <IconButton onClick={handleMenuClick}>
-          <MoreVertIcon />
-        </IconButton>
-      </Box>
 
-      {/* Título */}
-      <Typography variant="h4" color="secondary" align="center" gutterBottom>
-        Flota de Vehículos
-      </Typography>
+          <Box display="flex" justifyContent="center" gap={2} mb={2}>
+            {!mostrandoFlotaPorSucursal ? (
+              <Button variant="contained" color="primary" onClick={verFlotaPorSucursal}>
+                Ver Flota por Sucursal
+              </Button>
+            ) : (
+              <Button variant="contained" color="secondary" onClick={() => setMostrandoFlotaPorSucursal(false)}>
+                Ver Listado Completo
+              </Button>
+            )}
+          </Box>
 
-      {/* Menú de acciones */}
-      <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleClose}>
-        <MenuItem onClick={() => { navigate('/crear-vehiculo'); handleClose(); }}>Crear nuevo</MenuItem>
-        <MenuItem onClick={() => { navigate('/modificar-vehiculo'); handleClose(); }}>Modificar</MenuItem>
-        <MenuItem onClick={() => { navigate('/eliminar-vehiculo'); handleClose(); }}>Eliminar</MenuItem>
-      </Menu>
+          {loading && (
+            <Box display="flex" justifyContent="center" mt={4}>
+              <CircularProgress />
+            </Box>
+          )}
 
-      {error ? (
-        <Typography align="center" color="error">
-          Error al cargar la flota.
-        </Typography>
-      ) : (
-        Object.entries(agrupado).map(([marca, modelos]) => (
-          <Accordion key={marca} sx={{ mb: 2 }}>
-            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-              <Typography variant="h6">{marca}</Typography>
-            </AccordionSummary>
-            <AccordionDetails>
-              {Object.entries(modelos).map(([modelo, vehiculosModelo]) => (
-                <Accordion key={modelo} sx={{ mb: 1 }}>
-                  <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                    <Typography variant="subtitle1">
-                      {modelo} ({vehiculosModelo.length} {vehiculosModelo.length === 1 ? 'unidad' : 'unidades'})
-                    </Typography>
-                  </AccordionSummary>
-                  <AccordionDetails>
-                    <Grid container spacing={2}>
-                      {vehiculosModelo.map((v, i) => (
-                        <Grid item xs={12} md={6} key={i}>
-                          <Card sx={{ borderRadius: 3, boxShadow: 3 }}>
-                            <CardContent>
-                              <Typography variant="subtitle1" gutterBottom>
-                                Año: {v.anio} | Matrícula: {v.matricula}
-                              </Typography>
-                              <Typography>Capacidad: {v.capacidad}</Typography>
-                              <Typography>Sucursal: {v.localidad_nombre}</Typography>
-                              <Typography>Estado: {v.estado_nombre}</Typography>
-                              <Typography>Categoría: {v.tipo}</Typography>
-                              <Typography>Precio por día: ${v.precio_por_dia}</Typography>
-                              <Typography>Política: {v.politica_cancelacion}</Typography>
-                            </CardContent>
-                          </Card>
-                        </Grid>
-                      ))}
-                    </Grid>
-                  </AccordionDetails>
-                </Accordion>
+          {!loading && !mostrandoFlotaPorSucursal && (
+            vehiculos.length > 0 ? (
+              <TableContainer component={Paper} sx={{ mt: 3 }}>
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell><strong>Marca</strong></TableCell>
+                      <TableCell><strong>Modelo</strong></TableCell>
+                      <TableCell><strong>Año</strong></TableCell>
+                      <TableCell><strong>Categoría</strong></TableCell>
+                      <TableCell><strong>Capacidad</strong></TableCell>
+                      <TableCell><strong>Matrícula</strong></TableCell>
+                      <TableCell><strong>Localidad</strong></TableCell>
+                      <TableCell><strong>Precio/Día</strong></TableCell>
+                      <TableCell><strong>Estado</strong></TableCell>
+                      <TableCell align="center"><strong>Acciones</strong></TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {vehiculos.map((vehiculo) => (
+                      <TableRow key={vehiculo.matricula}>
+                        <TableCell>{vehiculo.marca}</TableCell>
+                        <TableCell>{vehiculo.modelo}</TableCell>
+                        <TableCell>{vehiculo.anio}</TableCell>
+                        <TableCell>{vehiculo.tipo}</TableCell>
+                        <TableCell>{vehiculo.capacidad}</TableCell>
+                        <TableCell>{vehiculo.matricula}</TableCell>
+                        <TableCell>{vehiculo.localidad_nombre || 'Sin asignar'}</TableCell>
+                        <TableCell>${vehiculo.precio_por_dia}</TableCell>
+                        <TableCell>{vehiculo.estado_nombre}</TableCell>
+                        <TableCell align="center">
+                          <IconButton color="primary" onClick={() => handleModificar(vehiculo.matricula)}>
+                            <EditIcon />
+                          </IconButton>
+                          <IconButton color="error" onClick={() => handleEliminar(vehiculo.matricula)}>
+                            <DeleteIcon />
+                          </IconButton>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            ) : (
+              <Typography align="center" color="textSecondary" mt={4}>
+                No hay vehículos disponibles para mostrar.
+              </Typography>
+            )
+          )}
+
+          {!loading && mostrandoFlotaPorSucursal && (
+            <Box mt={3}>
+              {flotaPorSucursal.map((sucursal) => (
+                <Box key={sucursal.sucursal_id} mb={3} p={2} border="1px solid #ccc" borderRadius={2}>
+                  <Typography variant="h6" fontWeight="bold" gutterBottom>
+                    {sucursal.sucursal_nombre} - {sucursal.localidad_nombre}
+                  </Typography>
+
+                  {sucursal.vehiculos.length > 0 ? (
+                    <TableContainer component={Paper}>
+                      <Table size="small">
+                        <TableHead>
+                          <TableRow>
+                            <TableCell><strong>Marca</strong></TableCell>
+                            <TableCell><strong>Modelo</strong></TableCell>
+                            <TableCell><strong>Año</strong></TableCell>
+                            <TableCell><strong>Categoría</strong></TableCell>
+                            <TableCell><strong>Capacidad</strong></TableCell>
+                            <TableCell><strong>Matrícula</strong></TableCell>
+                            <TableCell><strong>Precio/Día</strong></TableCell>
+                            <TableCell><strong>Estado</strong></TableCell>
+                            <TableCell align="center"><strong>Acciones</strong></TableCell>
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
+                          {sucursal.vehiculos.map((veh) => (
+                            <TableRow key={veh.matricula}>
+                              <TableCell>{veh.marca}</TableCell>
+                              <TableCell>{veh.modelo}</TableCell>
+                              <TableCell>{veh.anio}</TableCell>
+                              <TableCell>{veh.categoria}</TableCell>
+                              <TableCell>{veh.capacidad}</TableCell>
+                              <TableCell>{veh.matricula}</TableCell>
+                              <TableCell>${veh.precio_por_dia}</TableCell>
+                              <TableCell>{veh.estado}</TableCell>
+                              <TableCell align="center">
+                                <IconButton color="primary" onClick={() => handleModificar(veh.matricula)}>
+                                  <EditIcon />
+                                </IconButton>
+                                <IconButton color="error" onClick={() => handleEliminar(veh.matricula)}>
+                                  <DeleteIcon />
+                                </IconButton>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </TableContainer>
+                  ) : (
+                    <Typography color="textSecondary" mt={1}>No hay vehículos asignados a esta sucursal</Typography>
+                  )}
+                </Box>
               ))}
-            </AccordionDetails>
-          </Accordion>
-        ))
-      )}
+            </Box>
+          )}
+
+          <Dialog open={Boolean(vehiculoAEliminar)} onClose={() => setVehiculoAEliminar(null)}>
+            <DialogTitle>Confirmar eliminación</DialogTitle>
+            <DialogContent>
+              <DialogContentText>
+                ¿Estás seguro de que querés eliminar el vehículo {vehiculoAEliminar}?
+                Esta acción no se puede deshacer.
+              </DialogContentText>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setVehiculoAEliminar(null)} color="primary">
+                Cancelar
+              </Button>
+              <Button onClick={confirmarEliminacion} color="error" variant="contained">
+                Eliminar
+              </Button>
+            </DialogActions>
+          </Dialog>
+
+          <Snackbar
+            open={openSnackbar}
+            autoHideDuration={4000}
+            onClose={() => setOpenSnackbar(false)}
+            anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+          >
+            <Alert
+              onClose={() => setOpenSnackbar(false)}
+              severity={esError ? 'error' : 'success'}
+              sx={{ width: '100%' }}
+            >
+              {mensaje}
+            </Alert>
+          </Snackbar>
+        </CardContent>
+      </Card>
     </Box>
   );
 }
